@@ -11,4 +11,3 @@ log.warn = (message) => { process.stderr.write(chalk.yellow("warn - ") + message
 log.loader = (message, type = "info") => { switch (type) { case "warn": process.stderr.write(crayon("warn - ") + message + "\n"); break; case "error": process.stderr.write(chalk.hex("#ff0000")("error - ") + message + "\n"); break; default: process.stderr.write(blu("REBEL - ") + message + "\n"); break; } };
 
 module.exports = log;
-
