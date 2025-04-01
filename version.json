@@ -1,6 +1,6 @@
 [
 	{
-		"version": "5.2.2",
+		"version": "1.2.2",
 		"files": {
 			"scripts/commands/auto.js": ""
 		},
