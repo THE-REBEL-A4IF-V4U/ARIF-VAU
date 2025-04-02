@@ -1,40 +1,100 @@
 module.exports = function({ api, models, Users, Threads, Currencies }) {
-  const stringSimilarity = require('string-similarity'),
-    escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-    logger = require("../../catalogs/Rebelc.js");
-  const axios = require('axios')
+  const stringSimilarity = require('string-similarity');
   const moment = require("moment-timezone");
+  const axios = require('axios');
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
   return async function({ event }) {
-    const dateNow = Date.now()
-    const time = moment.tz("Asia/Manila").format("HH:MM:ss DD/MM/YYYY");
-    const { allowInbox, adminOnly, keyAdminOnly } = global.Rebel;
-    const { PREFIX, ADMINBOT, developermode, OPERATOR, APPROVED, approval } = global.config;
-    const { userBanned, threadBanned, threadInfo, threadData, commandBanned } = global.data;
-    const { commands, cooldowns } = global.client;
-    var { body, senderID, threadID, messageID } = event;
-    var senderID = String(senderID),
-      threadID = String(threadID);
-    const threadSetting = threadData.get(threadID) || {}
+    const dateNow = Date.now();
+    const time = moment.tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY");
+
+    const { allowInbox, adminOnly, keyAdminOnly } = global.Rebel || {};
+    const { PREFIX, ADMINBOT, developermode, OPERATOR, APPROVED, approval } = global.config || {};
+    const { userBanned, threadBanned, threadInfo, threadData, commandBanned } = global.data || {};
+    const { commands, cooldowns } = global.client || {};
+
+    let { body, senderID, threadID, messageID } = event;
+    senderID = String(senderID);
+    threadID = String(threadID);
+
     const args = (body || '').trim().split(/ +/);
     const commandName = args.shift()?.toLowerCase();
-    var command = commands.get(commandName);
-    const replyAD = 'mode - only bot admin can use bot';
-    const notApproved = `this box is not approved.\nuse "${PREFIX}request" to send a approval request from bot operators`;
-    const request = `requesting for box approval`;
-    if (typeof body === "string" && body.startsWith(`${PREFIX}request`) && approval) {
-      if (APPROVED.includes(threadID)) {
-        return api.sendMessage('this box is already approved', threadID, messageID)
-      }
-      let username = "not a user";
-      let groupname = "not a group";
-      try {
-        groupname = await global.data.threadInfo.get(threadID).threadName || "name does not exist";
-      } catch (error) {
-        username = await Users.getNameUser(threadID) || "facebook user";
-      }
-      return api.sendMessage(`${request}\n\nuser name : ${username}\ngroup name : ${groupname}\nid : ${threadID}`, OPERATOR[0], () => {
-        return api.sendMessage('your request has been sent from bot operator', threadID, messageID);
+    let command = commands.get(commandName);
+
+    if (!command) return;
+
+    // Check if thread is approved
+    if (approval && !APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID)) {
+      return api.sendMessage(`This box is not approved.\nUse "${PREFIX}request" to send an approval request.`, threadID, async (err, info) => {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        if (info && info.messageID) api.unsendMessage(info.messageID);
       });
+    }
+
+    // Check if user is banned
+    if (userBanned.has(senderID) || threadBanned.has(threadID)) {
+      if (!ADMINBOT.includes(senderID) && !OPERATOR.includes(senderID)) {
+        return api.sendMessage("You are banned from using the bot.", threadID, messageID);
+      }
+    }
+
+    // Check for command bans
+    if (commandBanned.get(threadID) || commandBanned.get(senderID)) {
+      if (!ADMINBOT.includes(senderID) && !OPERATOR.includes(senderID)) {
+        const bannedCommands = commandBanned.get(threadID) || commandBanned.get(senderID) || [];
+        if (bannedCommands.includes(command.config.name)) {
+          return api.sendMessage(`The command "${command.config.name}" is banned in this thread.`, threadID, async (err, info) => {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            if (info && info.messageID) api.unsendMessage(info.messageID);
+          });
+        }
+      }
+    }
+
+    // Admin Only Mode
+    if (adminOnly && !ADMINBOT.includes(senderID) && senderID !== api.getCurrentUserID()) {
+      return api.sendMessage("Only bot admins can use the bot in this mode.", threadID, messageID);
+    }
+
+    // Cooldown Check
+    if (!cooldowns.has(command.config.name)) {
+      cooldowns.set(command.config.name, new Map());
+    }
+
+    const timestamps = cooldowns.get(command.config.name);
+    const cooldownTime = (command.config.cooldowns || 1) * 1000;
+
+    if (timestamps.has(senderID)) {
+      const expirationTime = timestamps.get(senderID) + cooldownTime;
+      if (dateNow < expirationTime) {
+        return api.setMessageReaction('⏳', event.messageID);
+      }
+    }
+
+    // Set Cooldown
+    timestamps.set(senderID, dateNow);
+
+    // Run Command
+    try {
+      await command.run({
+        api,
+        event,
+        args,
+        models,
+        Users,
+        Threads,
+        Currencies,
+        permission: OPERATOR.includes(senderID) ? 3 : ADMINBOT.includes(senderID) ? 2 : 1
+      });
+
+      if (developermode) {
+        console.log(`Executed: ${commandName} | User: ${senderID} | Thread: ${threadID} | Time: ${(Date.now()) - dateNow}ms`);
+      }
+    } catch (error) {
+      return api.sendMessage(`An error occurred while executing the command "${commandName}".\nError: ${error.message}`, threadID);
+    }
+  };
+};      });
     }
     if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) &&(!APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID) && approval)) {
       return api.sendMessage(notApproved, threadID, async (err, info) => {
