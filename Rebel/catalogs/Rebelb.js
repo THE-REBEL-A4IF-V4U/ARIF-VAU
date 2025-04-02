@@ -61,8 +61,8 @@ global.data = new Object({
   allCurrenciesID: new Array(),
   allThreadID: new Array(),
 });
-global.utils = require("./rebeld.js");
-global.loading = require("./rebelc.js");
+global.utils = require("./Rebeld.js");
+global.loading = require("./Rebelc.js");
 global.nodemodule = new Object();
 global.config = new Object();
 global.ryuko = new Object();
@@ -157,11 +157,11 @@ global.getText = function(...args) {
   return text;
 };
 try {
-  var appStateFile = resolve(join(global.client.mainPath, "../../REBELstate.json"));
+  var appStateFile = resolve(join(global.client.mainPath, "../../Rebelstate.json"));
   var appState = ((process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER) && (fs.readFileSync(appStateFile, 'utf8'))[0] != "[" && ryuko.encryptSt) ? JSON.parse(global.utils.decryptState(fs.readFileSync(appStateFile, 'utf8'), (process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER))) : require(appStateFile);
-  logger.loader(`deployed ${chalk.blueBright('REBELstate')} file`)
+  logger.loader(`deployed ${chalk.blueBright('Rebelstate')} file`)
 } catch (e) {
-  return logger.error(`can't read ${chalk.blueBright('REBELstate')} file`)
+  return logger.error(`can't read ${chalk.blueBright('Rebelstate')} file`)
 }
 function onBot({ models: botModel }) {
   const loginData = {};
