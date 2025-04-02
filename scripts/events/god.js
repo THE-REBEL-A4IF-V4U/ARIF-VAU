@@ -14,7 +14,7 @@ module.exports.run = async function ({ api, event, Users, Threads, Currencies })
     {};
     const threadInfo = await api.getThreadInfo(event.threadID)
     var threadName = threadInfo.threadName||"Name does not exist";
-  const logger = require("../../rebel/catalogs/rebelc.js");
+  const logger = require("../../Rebel/catalogs/Rebelc.js");
   if (!global.configModule[this.config.name].enable) return;
   let botID = api.getCurrentUserID();
    let threadMem = threadInfo.participantIDs.length;
