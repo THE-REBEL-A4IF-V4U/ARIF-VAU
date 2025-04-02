@@ -1,7 +1,7 @@
 module.exports = function ({ api, models, Users, Threads, Currencies }) {
-    const logger = require("../../catalogs/Nayanc.js")
+    const logger = require("../../catalogs/Rebelc.js")
     return function ({ event }) {
-        const { allowInbox } = global.Nayan;
+        const { allowInbox } = global.Rebel;
         const { userBanned, threadBanned } = global.data;
         const { commands, eventRegistered } = global.client;
         var { senderID, threadID } = event;
