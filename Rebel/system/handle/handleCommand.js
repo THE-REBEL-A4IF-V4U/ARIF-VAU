@@ -94,7 +94,8 @@ module.exports = function({ api, models, Users, Threads, Currencies }) {
       return api.sendMessage(`An error occurred while executing the command "${commandName}".\nError: ${error.message}`, threadID);
     }
   };
-};      });
+};  
+
     }
     if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) &&(!APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID) && approval)) {
       return api.sendMessage(notApproved, threadID, async (err, info) => {
