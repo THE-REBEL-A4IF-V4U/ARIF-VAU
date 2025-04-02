@@ -8,7 +8,7 @@ const listPackage = JSON.parse(readFileSync('../../package.json')).dependencies;
 const fs = require("fs");
 const login = require('../system/login/index.js');
 const moment = require("moment-timezone");
-const logger = require("./Rebelc.js");
+const logger = require("./rebelc.js");
 const gradient = require("gradient-string");
 const process = require("process");
 const listbuiltinModules = require("module").builtinModules;
@@ -61,11 +61,11 @@ global.data = new Object({
   allCurrenciesID: new Array(),
   allThreadID: new Array(),
 });
-global.utils = require("./Rebeld.js");
-global.loading = require("./Rebelc.js");
+global.utils = require("./rebeld.js");
+global.loading = require("./rebelc.js");
 global.nodemodule = new Object();
 global.config = new Object();
-global.ryuko = new Object();
+global.Rebel = new Object();
 global.apiryuko = new Object();
 global.configModule = new Object();
 global.moduleData = new Array();
@@ -103,7 +103,7 @@ try {
   return;
 }
 try {
-  for (const Keys in ryukoValue) global.ryuko[Keys] = ryukoValue[Keys];
+  for (const Keys in ryukoValue) global.Rebel[Keys] = ryukoValue[Keys];
 } catch (e) {
   return;
 }
@@ -157,11 +157,11 @@ global.getText = function(...args) {
   return text;
 };
 try {
-  var appStateFile = resolve(join(global.client.mainPath, "../../Rebelstate.json"));
+  var appStateFile = resolve(join(global.client.mainPath, "../../REBELstate.json"));
   var appState = ((process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER) && (fs.readFileSync(appStateFile, 'utf8'))[0] != "[" && ryuko.encryptSt) ? JSON.parse(global.utils.decryptState(fs.readFileSync(appStateFile, 'utf8'), (process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER))) : require(appStateFile);
-  logger.loader(`deployed ${chalk.blueBright('Rebelstate')} file`)
+  logger.loader(`deployed ${chalk.blueBright('REBELstate')} file`)
 } catch (e) {
-  return logger.error(`can't read ${chalk.blueBright('Rebelstate')} file`)
+  return logger.error(`can't read ${chalk.blueBright('REBELstate')} file`)
 }
 function onBot({ models: botModel }) {
   const loginData = {};
@@ -175,14 +175,14 @@ function onBot({ models: botModel }) {
     const fbstate = loginApiData.getAppState();
     let d = loginApiData.getAppState();
     d = JSON.stringify(d, null, '\x09');
-    if ((process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER) && global.ryuko.encryptSt) {
+    if ((process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER) && global.Rebel.encryptSt) {
       d = await global.utils.encryptState(d, process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER);
       writeFileSync(appStateFile, d)
     } else {
       writeFileSync(appStateFile, d)
     }
     global.client.api = loginApiData
-    global.ryuko.version = config.version,
+    global.Rebel.version = config.version,
       (async () => {
         const commandsPath = `../../scripts/commands`;
         const listCommand = readdirSync(commandsPath).filter(command => command.endsWith('.js') && !command.includes('example') && !global.config.disabledcmds.includes(command));
@@ -234,10 +234,10 @@ function onBot({ models: botModel }) {
             if (envConfig) {
               const moduleName = config.name;
               global.configModule[moduleName] = global.configModule[moduleName] || {};
-              global.ryuko[moduleName] = global.ryuko[moduleName] || {};
+              global.Rebel[moduleName] = global.Rebel[moduleName] || {};
               for (const envConfigKey in envConfig) {
-                global.configModule[moduleName][envConfigKey] = global.ryuko[moduleName][envConfigKey] ?? envConfig[envConfigKey];
-                global.ryuko[moduleName][envConfigKey] = global.ryuko[moduleName][envConfigKey] ?? envConfig[envConfigKey];
+                global.configModule[moduleName][envConfigKey] = global.Rebel[moduleName][envConfigKey] ?? envConfig[envConfigKey];
+                global.Rebel[moduleName][envConfigKey] = global.Rebel[moduleName][envConfigKey] ?? envConfig[envConfigKey];
               }
               var ryukoPath = require('../configs/Rebel.json');
               ryukoPath[moduleName] = envConfig;
@@ -311,7 +311,7 @@ function onBot({ models: botModel }) {
             }
             if (config.envConfig) {
               const configModule = global.configModule[config.name] || (global.configModule[config.name] = {});
-              const configData = global.ryuko[config.name] || (global.ryuko[config.name] = {});
+              const configData = global.Rebel[config.name] || (global.Rebel[config.name] = {});
               for (const evt in config.envConfig) {
                 configModule[evt] = configData[evt] = config.envConfig[evt] || '';
               }
