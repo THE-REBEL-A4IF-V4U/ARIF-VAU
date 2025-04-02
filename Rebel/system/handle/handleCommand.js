@@ -96,7 +96,7 @@ module.exports = function({ api, models, Users, Threads, Currencies }) {
   };
 };  
 
-    }
+    
     if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) &&(!APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID) && approval)) {
       return api.sendMessage(notApproved, threadID, async (err, info) => {
             await new Promise(resolve => setTimeout(resolve, 5 * 1000));
