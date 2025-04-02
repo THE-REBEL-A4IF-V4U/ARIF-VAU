@@ -8,7 +8,7 @@ const listPackage = JSON.parse(readFileSync('../../package.json')).dependencies;
 const fs = require("fs");
 const login = require('../system/login/index.js');
 const moment = require("moment-timezone");
-const logger = require("./rebelc.js");
+const logger = require("./Rebelc.js");
 const gradient = require("gradient-string");
 const process = require("process");
 const listbuiltinModules = require("module").builtinModules;
@@ -61,8 +61,8 @@ global.data = new Object({
   allCurrenciesID: new Array(),
   allThreadID: new Array(),
 });
-global.utils = require("./rebeld.js");
-global.loading = require("./rebelc.js");
+global.utils = require("./Rebeld.js");
+global.loading = require("./Rebelc.js");
 global.nodemodule = new Object();
 global.config = new Object();
 global.Rebel = new Object();
@@ -111,15 +111,15 @@ var configValue;
 try {
   global.client.configPath = join(global.client.mainPath, "../../Rebel.json");
   configValue = require(global.client.configPath);
-  logger.loader(`deploying ${chalk.blueBright('REBEL')} file`);
+  logger.loader(`deploying ${chalk.blueBright('Rebel')} file`);
 } catch (e) {
-  return logger.loader(`cant read ${chalk.blueBright('REBEL')} file`, "error");
+  return logger.loader(`cant read ${chalk.blueBright('Rebel')} file`, "error");
 }
 try {
   for (const key in configValue) global.config[key] = configValue[key];
-  logger.loader(`deployed ${chalk.blueBright('REBEL')} file`);
+  logger.loader(`deployed ${chalk.blueBright('Rebel')} file`);
 } catch (e) {
-  return logger.loader(`can't deploy ${chalk.blueBright('REBEL')} file`, "error")
+  return logger.loader(`can't deploy ${chalk.blueBright('Rebel')} file`, "error")
 }
 const { Sequelize, sequelize } = require("../system/database/index.js");
 for (const property in listPackage) {
@@ -157,11 +157,11 @@ global.getText = function(...args) {
   return text;
 };
 try {
-  var appStateFile = resolve(join(global.client.mainPath, "../../REBELstate.json"));
+  var appStateFile = resolve(join(global.client.mainPath, "../../Rebelstate.json"));
   var appState = ((process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER) && (fs.readFileSync(appStateFile, 'utf8'))[0] != "[" && ryuko.encryptSt) ? JSON.parse(global.utils.decryptState(fs.readFileSync(appStateFile, 'utf8'), (process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER))) : require(appStateFile);
-  logger.loader(`deployed ${chalk.blueBright('REBELstate')} file`)
+  logger.loader(`deployed ${chalk.blueBright('Rebelstate')} file`)
 } catch (e) {
-  return logger.error(`can't read ${chalk.blueBright('REBELstate')} file`)
+  return logger.error(`can't read ${chalk.blueBright('Rebelstate')} file`)
 }
 function onBot({ models: botModel }) {
   const loginData = {};
@@ -187,7 +187,7 @@ function onBot({ models: botModel }) {
         const commandsPath = `../../scripts/commands`;
         const listCommand = readdirSync(commandsPath).filter(command => command.endsWith('.js') && !command.includes('example') && !global.config.disabledcmds.includes(command));
   console.clear();
-  console.log(chalk.blue(`DEPLOYING rebel COMMANDS888\n`));
+  console.log(chalk.blue(`DEPLOYING Rebel COMMANDS888\n`));
         for (const command of listCommand) {
           try {
             const module = require(`${commandsPath}/${command}`);
@@ -195,7 +195,7 @@ function onBot({ models: botModel }) {
 
             if (!config?.category) {
               try {
-                throw new Error(`[REBEL] ${command} category is not in the correct format or empty`);
+                throw new Error(`[Rebel] ${command} category is not in the correct format or empty`);
               } catch (error) {
                 console.log(chalk.red(error.message));
                 continue;
@@ -204,12 +204,12 @@ function onBot({ models: botModel }) {
 
 
             if (!config?.hasOwnProperty('prefix')) {
-              console.log(`[REBEL] `, chalk.hex("#ff0000")(command) + ` does not have the "prefix" property.`);
+              console.log(`[Rebel] `, chalk.hex("#ff0000")(command) + ` does not have the "prefix" property.`);
               continue;
             }
 
             if (global.client.commands.has(config.name || '')) {
-              console.log(chalk.red(`[REBEL] ${chalk.hex("#FFFF00")(command)} module is already deployed.`));
+              console.log(chalk.red(`[Rebel] ${chalk.hex("#FFFF00")(command)} module is already deployed.`));
               continue;
             }
             const { dependencies, envConfig } = config;
@@ -253,34 +253,34 @@ function onBot({ models: botModel }) {
                 module.onLoad(moduleData);
               } catch (error) {
                 const errorMessage = "unable to load the onLoad function of the module."
-                throw new Error(errorMessage, '[REBEL]');
+                throw new Error(errorMessage, '[Rebel]');
               }
             }
 
             if (module.handleEvent) global.client.eventRegistered.push(config.name);
             global.client.commands.set(config.name, module);
             try {
-              global.loading(`${crayon(``)}successfully deployed ${chalk.blueBright(config.name)}`, "[REBEL]");
+              global.loading(`${crayon(``)}successfully deployed ${chalk.blueBright(config.name)}`, "[Rebel]");
             } catch (err) {
               console.error("an error occurred while deploying the command : ", err);
             }
 
             console.err
           } catch (error) {
-            global.loading.err(`${chalk.hex('#ff7100')(``)}failed to deploy ${chalk.hex("#FFFF00")(command)} ` + error + '\n', "[REBEL]");
+            global.loading.err(`${chalk.hex('#ff7100')(``)}failed to deploy ${chalk.hex("#FFFF00")(command)} ` + error + '\n', "[Rebel]");
           }
         }
       })(),
 
       (async () => {
         const events = readdirSync(join(global.client.mainPath, '../../scripts/events')).filter(ev => ev.endsWith('.js') && !global.config.disabledevents.includes(ev));
-        console.log(chalk.blue(`\n` + `●──DEPLOYING ALL rebel EVENTS──●\n`));
+        console.log(chalk.blue(`\n` + `●──DEPLOYING ALL Rebel EVENTS──●\n`));
         for (const ev of events) {
           try {
             const event = require(join(global.client.mainPath, '../../scripts/events', ev));
             const { config, onLoad, run } = event;
             if (!config || !config.name || !run) {
-              global.loading.err(`${chalk.hex('#ff7100')(``)} ${chalk.hex("#FFFF00")(ev)} module is not in the correct format. `, "[REBEL]");
+              global.loading.err(`${chalk.hex('#ff7100')(``)} ${chalk.hex("#FFFF00")(ev)} module is not in the correct format. `, "[Rebel]");
               continue;
             }
 
@@ -293,7 +293,7 @@ function onBot({ models: botModel }) {
             }
 
             if (global.client.events.has(config.name)) {
-              global.loading.err(`${chalk.hex('#ff7100')(``)} ${chalk.hex("#FFFF00")(ev)} module is already deployed.`, "[REBEL]");
+              global.loading.err(`${chalk.hex('#ff7100')(``)} ${chalk.hex("#FFFF00")(ev)} module is already deployed.`, "[Rebel]");
               continue;
             }
             if (config.dependencies) {
@@ -326,19 +326,19 @@ function onBot({ models: botModel }) {
               await onLoad(eventData);
             }
             global.client.events.set(config.name, event);
-            global.loading(`${crayon(``)}successfully deployed ${chalk.blueBright(config.name)}`, "[REBEL]");
+            global.loading(`${crayon(``)}successfully deployed ${chalk.blueBright(config.name)}`, "[Rebel]");
           }
           catch (err) {
-            global.loading.err(`${chalk.hex("#ff0000")('')}${chalk.blueBright(ev)} failed with error : ${err.message}` + `\n`, "[REBEL]");
+            global.loading.err(`${chalk.hex("#ff0000")('')}${chalk.blueBright(ev)} failed with error : ${err.message}` + `\n`, "[Rebel]");
           }
 
 
 
         }
       })();
-    console.log(chalk.blue(`\n` + `DEPLOYING rebel DATA\n`));
-    global.loading(`${crayon(``)}deployed ${chalk.blueBright(`${global.client.commands.size}`)} commands and ${chalk.blueBright(`${global.client.events.size}`)} events`, "[REBEL]");
-    global.loading(`${crayon(``)}deployed time : ${chalk.blueBright(((Date.now() - global.client.timeStart) / 1000).toFixed() + 's')}`, "[REBEL]");
+    console.log(chalk.blue(`\n` + `DEPLOYING Rebel DATA\n`));
+    global.loading(`${crayon(``)}deployed ${chalk.blueBright(`${global.client.commands.size}`)} commands and ${chalk.blueBright(`${global.client.events.size}`)} events`, "[Rebel]");
+    global.loading(`${crayon(``)}deployed time : ${chalk.blueBright(((Date.now() - global.client.timeStart) / 1000).toFixed() + 's')}`, "[Rebel]");
     const listenerData = {};
     listenerData.api = loginApiData;
     listenerData.models = botModel;
@@ -347,11 +347,11 @@ function onBot({ models: botModel }) {
     global.handleListen = loginApiData.listenMqtt(async (error, message) => {
       if (error) {
         if (error.error === 'Not logged in.') {
-          logger("your bot account has been logged out", '[REBEL]');
+          logger("your bot account has been logged out", '[Rebel]');
           return process.exit(1);
         }
         if (error.error === 'Not logged in') {
-          logger("your account has been checkpointed, please confirm your account and log in again.", 'rebel');
+          logger("your account has been checkpointed, please confirm your account and log in again.", 'Rebel');
           return process.exit(0);
         }
         console.log(error);
@@ -370,10 +370,10 @@ function onBot({ models: botModel }) {
     authentication.Sequelize = Sequelize;
     authentication.sequelize = sequelize;
     const models = require('../system/database/model.js')(authentication);
-    logger(`deployed ${chalk.blueBright('database')} system`, "●──────BOT REBEL──────●");
-    logger(`deploying ${chalk.blueBright('login')} system`, "[REBEL]")
+    logger(`deployed ${chalk.blueBright('database')} system`, "●──────BOT Rebel──────●");
+    logger(`deploying ${chalk.blueBright('login')} system`, "[Rebel]")
     const botData = {};
     botData.models = models
     onBot(botData);
-  } catch (error) { logger(`can't deploy ${chalk.blueBright('database')} system`, "[REBEL]") }
+  } catch (error) { logger(`can't deploy ${chalk.blueBright('database')} system`, "[Rebel]") }
   })();
