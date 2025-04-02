@@ -2,7 +2,7 @@ module.exports.config = {
 	name: "logs",
 	eventType: ["log:unsubscribe","log:subscribe","log:thread-name"],
 	version: "1.0.0",
-	credits: "ryuko",
+	credits: "Nayan",
 	description: "record bot activity notifications",
     envConfig: {
         enable: true
@@ -10,7 +10,7 @@ module.exports.config = {
 };
 
 module.exports.run = async function({ api, event, Threads }) {
-    const logger = require("../../viper/catalogs/viperc.js");
+    const logger = require("../../Nayan/catalogs/Nayanc.js");
     if (!global.configModule[this.config.name].enable) return;
     var formReport =  "bot notification" +
                         "\n\nthread id : " + event.threadID +
