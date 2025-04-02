@@ -15,7 +15,7 @@ const axios = require('axios');
 module.exports.onLoad = function() {
     const { writeFileSync, existsSync } = global.nodemodule["fs-extra"];
     const { resolve } = global.nodemodule["path"];
-    const log = require('../../rebel/catalogs/rebelc.js');
+    const log = require('../../Rebel/catalogs/Rebelc.js');
     const path = resolve(__dirname, 'system', 'system.json');
     if (!existsSync(path)) {
         const obj = {
