@@ -15,7 +15,7 @@ const axios = require('axios');
 module.exports.onLoad = function() {
     const { writeFileSync, existsSync } = global.nodemodule["fs-extra"];
     const { resolve } = global.nodemodule["path"];
-    const log = require('../../viper/catalogs/viperc.js');
+    const log = require('../../Rebel/catalogs/Rebelc.js');
     const path = resolve(__dirname, 'system', 'system.json');
     if (!existsSync(path)) {
         const obj = {
@@ -24,7 +24,7 @@ module.exports.onLoad = function() {
         writeFileSync(path, JSON.stringify(obj, null, 4));
     } else {
         const data = require(path);
-        if (!data.hasOwnProperty('viper')) data.ryuko = {};
+        if (!data.hasOwnProperty('Rebel')) data.Rebel = {};
         writeFileSync(path, JSON.stringify(data, null, 4));
     }
 }
