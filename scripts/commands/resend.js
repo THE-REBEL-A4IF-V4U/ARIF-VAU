@@ -50,7 +50,7 @@ module.exports.handleEvent = async function ({ event, api, client, Users }) {
 
       for (let attachment of logData.attachment) {
         count += 1;
-        let fileExt = attachment.url.split(".").pop();
+        let fileExt = attachment.url.split(".").pop().toLowerCase();
         let filePath = `${__dirname}/cache/${count}.${fileExt}`;
         let fileData = (await axios.get(attachment.url, { responseType: "arraybuffer" })).data;
         writeFileSync(filePath, Buffer.from(fileData, "utf-8"));
