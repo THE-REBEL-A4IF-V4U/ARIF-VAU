@@ -1,9 +1,9 @@
 
 module.exports = function ({ Users, Threads, Currencies }) {
-    const logger =require("../../catalogs/Nayanc.js");
+    const logger =require("../../catalogs/Rebelc.js");
     return async function ({ event }) {
         const { allUserID, allCurrenciesID, allThreadID, userName, threadInfo } = global.data; 
-        const { autoCreateDB } = global.Nayan;
+        const { autoCreateDB } = global.Rebel;
         if (autoCreateDB == ![]) return;
         var { senderID, threadID } = event;
         senderID = String(senderID);
