@@ -20,8 +20,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "/website/Rebel.html"));
 });
 
-console.clear();
-
 function startBot(restartMessage) {
   if (restartMessage) {
     logger(restartMessage, "starting");
@@ -35,11 +33,18 @@ function startBot(restartMessage) {
 `)
   );
 
-  logger.loader("Deploying app on port " + chalk.blueBright(PORT));
+  if (typeof logger.loader === "function") {
+    logger.loader("Deploying app on port " + chalk.blueBright(PORT));
+  } else {
+    console.log(chalk.yellow("Logger does not have 'loader' method."));
+  }
 
   // Start the server properly
   app.listen(PORT, () => {
-    logger.loader("App deployed on port " + chalk.blueBright(PORT));
+    if (typeof logger.loader === "function") {
+      logger.loader("App deployed on port " + chalk.blueBright(PORT));
+    }
+    console.log(chalk.green(`Server is running on port ${PORT}`));
   });
 
   // Initialize global countRestart if undefined
@@ -47,8 +52,7 @@ function startBot(restartMessage) {
     global.countRestart = 0;
   }
 
-  const botProcess = spawn("node", ["--trace-warnings", "--async-stack-traces", "Rebelb.js"], {
-    cwd: __dirname,
+  const botProcess = spawn("node", ["--trace-warnings", "--async-stack-traces", path.join(__dirname, "Rebelb.js")], {
     stdio: "inherit",
     shell: true,
   });
