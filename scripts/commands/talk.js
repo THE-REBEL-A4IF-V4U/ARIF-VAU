@@ -33,7 +33,7 @@ module.exports.handleEvent = async ({ api, event, args, Threads }) => {
     const { threadID, messageID } = event;
     const { resolve } = global.nodemodule["path"];
     const path = resolve(__dirname, '../commands', 'system', 'system.json');
-    const { talk } = global.apirebel;
+    const { talk } = global.apiryuko;
     const { ryuko } = require(path);
 
     if (ryuko.hasOwnProperty(threadID) && ryuko[threadID] == true) {
