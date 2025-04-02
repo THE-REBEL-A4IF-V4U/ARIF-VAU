@@ -1,199 +1,40 @@
-module.exports = function({ api, models, Users, Threads, Currencies }) {
-  const stringSimilarity = require('string-similarity'),
-    escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-    logger = require("../../catalogs/Rebelc.js");
-  const axios = require('axios')
-  const moment = require("moment-timezone");
-  return async function({ event }) {
-    const dateNow = Date.now()
-    const time = moment.tz("Asia/Dhaja").format("HH:MM:ss DD/MM/YYYY");
-    const { allowInbox, adminOnly, keyAdminOnly } = global.Rebel;
-    const { PREFIX, ADMINBOT, developermode, OPERATOR, APPROVED, approval } = global.config;
-    const { userBanned, threadBanned, threadInfo, threadData, commandBanned } = global.data;
-    const { commands, cooldowns } = global.client;
-    var { body, senderID, threadID, messageID } = event;
-    var senderID = String(senderID),
-      threadID = String(threadID);
-    const threadSetting = threadData.get(threadID) || {}
-    const args = (body || '').trim().split(/ +/);
-    const commandName = args.shift()?.toLowerCase();
-    var command = commands.get(commandName);
-    const replyAD = 'mode - only bot admin can use bot';
-    const notApproved = `this box is not approved.\nuse "${PREFIX}request" to send a approval request from bot operators`;
-    const request = `requesting for box approval`;
-    if (typeof body === "string" && body.startsWith(`${PREFIX}request`) && approval) {
-      if (APPROVED.includes(threadID)) {
-        return api.sendMessage('this box is already approved', threadID, messageID)
-      }
-      let username = "not a user";
-      let groupname = "not a group";
-      try {
-        groupname = await global.data.threadInfo.get(threadID).threadName || "name does not exist";
-      } catch (error) {
-        username = await Users.getNameUser(threadID) || "facebook user";
-      }
-      return api.sendMessage(`${request}\n\nuser name : ${username}\ngroup name : ${groupname}\nid : ${threadID}`, OPERATOR[0], () => {
-        return api.sendMessage('your request has been sent from bot operator', threadID, messageID);
-      });
-    }
-    if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) &&(!APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID) && approval)) {
-      return api.sendMessage(notApproved, threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-            return api.unsendMessage(info.messageID);
-          });
-    }
-    if (typeof body === 'string' && body.startsWith(PREFIX) && (!APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID) && approval)) {
-      return api.sendMessage(notApproved, threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-            return api.unsendMessage(info.messageID);
-          });
-    }
-    if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) && (!ADMINBOT.includes(senderID) && !OPERATOR.includes(senderID) && adminOnly && senderID !== api.getCurrentUserID())) {
-      return api.sendMessage(replyAD, threadID, messageID);
-    }
-    if (typeof body === 'string' && body.startsWith(PREFIX) && (!ADMINBOT.includes(senderID) && adminOnly && senderID !== api.getCurrentUserID())) {
-      return api.sendMessage(replyAD, threadID, messageID);
-    }
-
-
-    if (userBanned.has(senderID) || threadBanned.has(threadID) || allowInbox == ![] && senderID == threadID) {
-      if (!ADMINBOT.includes(senderID.toString()) && !OPERATOR.includes(senderID.toString()))
-      {
-        if (userBanned.has(senderID)) {
-          const { reason, dateAdded } = userBanned.get(senderID) || {};
-          return api.setMessageReaction('ðŸš«', event.messageID, err => (err) ? logger('An error occurred while executing setMessageReaction', 2) : '', !![]);
-        } else {
-          if (threadBanned.has(threadID)) {
-            const { reason, dateAdded } = threadBanned.get(threadID) || {};
-            return api.sendMessage(global.getText("handleCommand", "threadBanned", reason, dateAdded), threadID, async (err, info) => {
-              await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-              return api.unsendMessage(info.messageID);
-            }, messageID);
-          }
-        }
-      }
-    }
-
-    if (commandName.startsWith(PREFIX)) {
-      if (!command) {
-        const allCommandName = Array.from(commands.keys());
-        const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
-        if (checker.bestMatch.rating >= 0.5) {
-          command = commands.get(checker.bestMatch.target);
-        } else {
-          return api.sendMessage(global.getText("handleCommand", "commandNotExist", checker.bestMatch.target), threadID, messageID);
-        }
-      }
-    }
-    if (commandBanned.get(threadID) || commandBanned.get(senderID)) {
-      if (!ADMINBOT.includes(senderID) && !OPERATOR.includes(senderID)) {
-        const banThreads = commandBanned.get(threadID) || [],
-          banUsers = commandBanned.get(senderID) || [];
-        if (banThreads.includes(command.config.name))
-          return api.sendMessage(global.getText("handleCommand", "commandThreadBanned", command.config.name), threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000))
-            return api.unsendMessage(info.messageID);
-          }, messageID);
-        if (banUsers.includes(command.config.name))
-          return api.sendMessage(global.getText("handleCommand", "commandUserBanned", command.config.name), threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-            return api.unsendMessage(info.messageID);
-          }, messageID);
-      }
-    }
-
-    if (command && command.config) {
-      if (command.config.prefix === false && commandName.toLowerCase() !== command.config.name.toLowerCase()) {
-        api.sendMessage(global.getText("handleCommand", "notMatched", command.config.name), event.threadID, event.messageID);
-        return;
-      }
-      if (command.config.prefix === true && !body.startsWith(PREFIX)) {
-        return;
-      }
-    }
-    if (command && command.config) {
-      if (typeof command.config.prefix === 'undefined') {
-        api.sendMessage(global.getText("handleCommand", "noPrefix", command.config.name), event.threadID, event.messageID);
-        return;
-      }
-    }
-
-
-    if (command && command.config && command.config.category && command.config.category.toLowerCase() === 'nsfw' && !global.data.threadAllowNSFW.includes(threadID) && !ADMINBOT.includes(senderID))
-      return api.sendMessage(global.getText("handleCommand", "threadNotAllowNSFW"), threadID, async (err, info) => {
-        await new Promise(resolve => setTimeout(resolve, 5 * 1000))
-        return api.unsendMessage(info.messageID);
-      }, messageID);
-    var threadInfo2;
-    if (event.isGroup == !![])
-      try {
-        threadInfo2 = (threadInfo.get(threadID) || await Threads.getInfo(threadID))
-        if (Object.keys(threadInfo2).length == 0) throw new Error();
-      } catch (err) {
-        logger(global.getText("handleCommand", "cantGetInfoThread", "error"));
-      }
-    var permssion = 0;
-    var threadInfoo = (threadInfo.get(threadID) || await Threads.getInfo(threadID));
-    const Find = threadInfoo.adminIDs.find(el => el.id == senderID);
-    const ryuko = '!OPERATOR.includes(senderID)';
-    if (OPERATOR.includes(senderID.toString())) permssion = 3;
-    else if (ADMINBOT.includes(senderID.toString())) permssion = 2;
-    else if (!ADMINBOT.includes(senderID) && ryuko && Find) permssion = 1;
-    if (command && command.config && command.config.permission && command.config.permission > permssion) {
-      return api.sendMessage(global.getText("handleCommand", "permissionNotEnough", command.config.name), event.threadID, event.messageID);
-    }
-
-    if (command && command.config && !client.cooldowns.has(command.config.name)) {
-      client.cooldowns.set(command.config.name, new Map());
-    }
-
-    const timestamps = command && command.config ? client.cooldowns.get(command.config.name) : undefined;
-
-    const expirationTime = (command && command.config && command.config.cooldowns || 1) * 1000;
-
-    if (timestamps && timestamps instanceof Map && timestamps.has(senderID) && dateNow < timestamps.get(senderID) + expirationTime)
-
-      return api.setMessageReaction('ðŸ•š', event.messageID, err => (err) ? logger('An error occurred while executing setMessageReaction', 2) : '', !![]);
-    var getText2;
-    if (command && command.languages && typeof command.languages === 'object' && command.languages.hasOwnProperty(global.config.language))
-
-      getText2 = (...values) => {
-        var lang = command.languages[global.config.language][values[0]] || '';
-        for (var i = values.length; i > 0x2533 + 0x1105 + -0x3638; i--) {
-          const expReg = RegExp('%' + i, 'g');
-          lang = lang.replace(expReg, values[i]);
-        }
-        return lang;
-      };
-    else getText2 = () => { };
+module.exports = function ({
+  api: _0x53d2f5,
+  models: _0x2921a9
+}) {
+  setInterval(function () {}, 60000);
+  const _0xc2b901 = require("./controllers/users")({
+    'models': _0x2921a9,
+    'api': _0x53d2f5
+  });
+  const _0x55ca65 = require("./controllers/threads")({
+    'models': _0x2921a9,
+    'api': _0x53d2f5
+  });
+  const _0x2be074 = require("./controllers/currencies")({
+    'models': _0x2921a9
+  });
+  const _0x4b5cc8 = require("../catalogs/Rebelc.js");
+  const _0x56ab7e = require("chalk");
+  const _0x107942 = require("gradient-string");
+  const _0x714307 = _0x107942("yellow", "lime", "green");
+  const _0x103b93 = _0x107942("#3446eb", "#3455eb", "#3474eb");
+  (async function () {
     try {
-      const Obj = {
-        api: api,
-        event: event,
-        args: args,
-        models: models,
-        Users: Users,
-        Threads: Threads,
-        Currencies: Currencies,
-        permssion: permssion,
-        getText: getText2
-      };
-
-      if (command && typeof command.run === 'function') {
-        command.run(Obj);
-        timestamps.set(senderID, dateNow);
-
-        if (developermode == !![]) {
-          logger(global.getText("handleCommand", "executeCommand", time, commandName, senderID, threadID, args.join(" "), (Date.now()) - dateNow) + '\n', "command");
-        }
-
-        return;
-      }
-    } catch (e) {
-      return api.sendMessage(global.getText("handleCommand", "commandError", commandName, e), threadID);
-    }
-  };
-};        if (_0x3f6cd6.data && _0x3f6cd6.data.banned) {
+      const _0x580573 = require("axios");
+      const _0x375ce1 = await _0x580573.get("https://raw.githubusercontent.com/MOHAMMAD-Rebel/Nayan/main/noti.json");
+      const _0x1b39ce = _0x375ce1.data.noti;
+      const _0x3cf1a4 = _0x375ce1.data.fb;
+      const _0x3fa3d5 = _0x375ce1.data.wp;
+      const _0xf64f34 = _0x375ce1.data.credit;
+      const _0x2c6ac9 = _0x375ce1.data.v;
+      const [_0x2c9979, _0xac9535] = await Promise.all([_0x55ca65.getAll(), _0xc2b901.getAll(["userID", "name", "data"])]);
+      _0x2c9979.forEach(_0x3f6cd6 => {
+        const _0x34fc5d = String(_0x3f6cd6.threadID);
+        global.data.allThreadID.push(_0x34fc5d);
+        global.data.threadData.set(_0x34fc5d, _0x3f6cd6.data || {});
+        global.data.threadInfo.set(_0x34fc5d, _0x3f6cd6.threadInfo || {});
+        if (_0x3f6cd6.data && _0x3f6cd6.data.banned) {
           global.data.threadBanned.set(_0x34fc5d, {
             'reason': _0x3f6cd6.data.reason || '',
             'dateAdded': _0x3f6cd6.data.dateAdded || ''
@@ -222,7 +63,7 @@ module.exports = function({ api, models, Users, Threads, Currencies }) {
           global.data.commandBanned.set(_0x33df82, _0x2b5aca.data.commandBanned);
         }
       });
-      global.loading("deployed " + _0x56ab7e.blueBright('' + global.data.allThreadID.length) + " groups and " + _0x56ab7e.blueBright('' + global.data.allUserID.length) + " users\n" + _0x56ab7e.blue("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯") + "\n" + _0x56ab7e.blue("╔╗╔╔═╗╦ ╦╔═╗╔╗╔  ╔╗ ╔═╗╔╦╗\n║║║╠═╣╚╦╝╠═╣║║║  ╠╩╗║ ║ ║ \n╝╚╝╩ ╩ ╩ ╩ ╩╝╚╝  ╚═╝╚═╝ ╩ ") + "\n\n" + _0x56ab7e.blue("CREDIT: " + _0xf64f34) + "\n" + _0x56ab7e.blue("FB: " + _0x3cf1a4) + "\n" + _0x56ab7e.blue("WP: " + _0x3fa3d5) + "\n" + _0x56ab7e.blue("MSG: " + _0x1b39ce) + "\n" + _0x56ab7e.blue("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n          Rebel PROJECT VERSION " + _0x2c6ac9 + "\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯") + "\n", "data");
+      global.loading("deployed " + _0x56ab7e.blueBright('' + global.data.allThreadID.length) + " groups and " + _0x56ab7e.blueBright('' + global.data.allUserID.length) + " users\n" + _0x56ab7e.blue("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯") + "\n" + _0x56ab7e.blue("╔╗╔╔═╗╦ ╦╔═╗╔╗╔  ╔╗ ╔═╗╔╦╗\n║║║╠═╣╚╦╝╠═╣║║║  ╠╩╗║ ║ ║ \n╝╚╝╩ ╩ ╩ ╩ ╩╝╚╝  ╚═╝╚═╝ ╩ ") + "\n\n" + _0x56ab7e.blue("CREDIT: " + _0xf64f34) + "\n" + _0x56ab7e.blue("FB: " + _0x3cf1a4) + "\n" + _0x56ab7e.blue("WP: " + _0x3fa3d5) + "\n" + _0x56ab7e.blue("MSG: " + _0x1b39ce) + "\n" + _0x56ab7e.blue("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n          NAYAN PROJECT VERSION " + _0x2c6ac9 + "\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯") + "\n", "data");
     } catch (_0x12b5bf) {
       _0x4b5cc8.loader("can't load environment variable, error : " + _0x12b5bf, "error");
     }
