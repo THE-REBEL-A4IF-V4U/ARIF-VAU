@@ -10,7 +10,7 @@ module.exports.config = {
 };
 
 module.exports.run = async function({ api, event, Threads }) {
-    const logger = require("../../Nayan/catalogs/Nayanc.js");
+    const logger = require("../../Rebel/catalogs/Rebelc.js");
     if (!global.configModule[this.config.name].enable) return;
     var formReport =  "bot notification" +
                         "\n\nthread id : " + event.threadID +
