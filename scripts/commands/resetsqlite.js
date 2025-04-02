@@ -18,7 +18,7 @@ const { exec } = require("child_process");
 const process = require("process");
 const { threadID, messageID } = event;
 let text = args.join(" ")
-exec(`rm -rf ../../viper/system/database/datasqlite/ryuko.sqlite`, (error, stdout, stderr) => {
+exec(`rm -rf ../../rebel/system/database/datasqlite/rebel.sqlite`, (error, stdout, stderr) => {
     if (error) {
         api.sendMessage(`error : \n${error.message}`, event.threadID, event.messageID);
         return;

@@ -12,7 +12,7 @@ module.exports.config = {
 module.exports.run = async function({ api, event, args, Threads }) {
 try {
   const axios = require("axios");
-  const {talk} = global.apiryuko;
+  const {talk} = global.apirebel;
   const {createReadStream, unlinkSync} = global.nodemodule["fs-extra"];
     const {resolve} = global.nodemodule["path"];
   let ask = args.join(" ");

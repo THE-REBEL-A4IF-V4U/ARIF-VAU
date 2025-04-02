@@ -15,7 +15,7 @@ const axios = require('axios');
 module.exports.onLoad = function() {
     const { writeFileSync, existsSync } = global.nodemodule["fs-extra"];
     const { resolve } = global.nodemodule["path"];
-    const log = require('../../Rebel/catalogs/Rebelc.js');
+    const log = require('../../rebel/catalogs/rebelc.js');
     const path = resolve(__dirname, 'system', 'system.json');
     if (!existsSync(path)) {
         const obj = {
@@ -24,7 +24,7 @@ module.exports.onLoad = function() {
         writeFileSync(path, JSON.stringify(obj, null, 4));
     } else {
         const data = require(path);
-        if (!data.hasOwnProperty('Rebel')) data.Rebel = {};
+        if (!data.hasOwnProperty('rebel')) data.ryuko = {};
         writeFileSync(path, JSON.stringify(data, null, 4));
     }
 }
@@ -33,7 +33,7 @@ module.exports.handleEvent = async ({ api, event, args, Threads }) => {
     const { threadID, messageID } = event;
     const { resolve } = global.nodemodule["path"];
     const path = resolve(__dirname, '../commands', 'system', 'system.json');
-    const { talk } = global.apiryuko;
+    const { talk } = global.apirebel;
     const { ryuko } = require(path);
 
     if (ryuko.hasOwnProperty(threadID) && ryuko[threadID] == true) {
@@ -55,7 +55,7 @@ module.exports.run = async ({ api, event, args, permssion }) => {
     const path = resolve(__dirname, 'system', 'system.json');
     const { threadID, messageID } = event;
     const database = require(path);
-    const { talk } = global.apiryuko;
+    const { talk } = global.apirebel;
     const { ryuko } = database;
 
     if (!args[0]) { api.sendMessage("enter a message", threadID, messageID) } else {

@@ -16,7 +16,7 @@ module.exports.config = {
 module.exports.run = async function ({api, event, args}) {
   try{
   const axios = require('axios');
-  const {sensui} = global.apiryuko
+  const {sensui} = global.apirebel
   let ask = args.join(' ');
   if (!ask) {
     return api.sendMessage('please provide a question.', event.threadID, event.messageID)

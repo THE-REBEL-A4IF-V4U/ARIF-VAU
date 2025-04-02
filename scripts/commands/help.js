@@ -9,9 +9,9 @@ module.exports.config = {
   usages: "[Shows Commands]",
   cooldowns: 5,
   envConfig: {
-		autoUnsend: true,
-		delayUnsend: 60
-	}
+    autoUnsend: true,
+    delayUnsend: 60
+  }
 };
 
 module.exports.languages = {
@@ -156,9 +156,13 @@ module.exports.run = async function ({ api, event, args, getText }) {
     const axios = require("axios");
     const fs = require("fs-extra");
     const imgP = [];
-    const img = [
-      "https://i.ibb.co/ZLnvPwQ/Picsart-23-07-24-11-03-50-602.png"
-    ];
+    const img = [ "https://i.imgur.com/ruQ2pRn.jpg",
+      "https://i.imgur.com/HXHb0cB.jpg",
+      "https://i.imgur.com/ZJEI6KW.jpg",
+      "https://i.imgur.com/XGL57Wp.jpg",
+      "https://i.imgur.com/6OB00HJ.jpg",
+      "https://i.imgur.com/6vHaRZm.jpg",
+      "https://i.imgur.com/k6uE93k.jpg" ];
     const path = __dirname + "/cache/menu.png";
     const rdimg = img[Math.floor(Math.random() * img.length)];
 
@@ -169,15 +173,15 @@ module.exports.run = async function ({ api, event, args, getText }) {
     fs.writeFileSync(path, Buffer.from(data, "utf-8"));
     imgP.push(fs.createReadStream(path));
     const msgg = {
-  body: `existing commands and categories\n\nhere's the categories and commands of ${global.config.BOTNAME} ai ;\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n` + msg + `\n\n`
+  body: `existing commands and categories\n\nhere's the categories and commands of ${global.config.BOTNAME} ai ;\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n` + msg + `\n\n`
     };
 
     const sentMessage = await api.sendMessage(msgg, threadID, async (error, info) => {
-			if (autoUnsend) {
-				await new Promise(resolve => setTimeout(resolve, delayUnsend * 500));
-				return api.unsendMessage(info.messageID);
-			} else return;
-		}, messageID);
+      if (autoUnsend) {
+        await new Promise(resolve => setTimeout(resolve, delayUnsend * 500));
+        return api.unsendMessage(info.messageID);
+      } else return;
+    }, messageID);
   } else {
     return api.sendMessage(
       getText(
@@ -197,10 +201,10 @@ module.exports.run = async function ({ api, event, args, getText }) {
         command.config.credits
       ),
       threadID, async (error, info) => {
-			if (autoUnsend) {
-				await new Promise(resolve => setTimeout(resolve, delayUnsend * 500));
-				return api.unsendMessage(info.messageID);
-			} else return;
-		}, messageID);
+      if (autoUnsend) {
+        await new Promise(resolve => setTimeout(resolve, delayUnsend * 500));
+        return api.unsendMessage(info.messageID);
+      } else return;
+    }, messageID);
   }
-};
+}; 

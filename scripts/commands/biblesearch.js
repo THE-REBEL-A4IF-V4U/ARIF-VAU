@@ -11,7 +11,7 @@ module.exports.config = {
 };
 module.exports.run = async function({ api, event, args }) {
 const axios = require("axios");
-const { biblesearch } = global.apiryuko;
+const { biblesearch } = global.apirebel;
 let { messageID, threadID, senderID, body } = event;
 const responce = args.join(" ");
 if (!args[0]) return api.sendMessage("wrong format.\n"+global.config.PREFIX+this.config.name+" "+this.config.usages, threadID, messageID);

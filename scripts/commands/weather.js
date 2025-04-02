@@ -30,7 +30,7 @@ module.exports.run = async ({ api, event, args, getText }) => {
 	const moment = global.nodemodule["moment-timezone"];
 	const { throwError } = global.utils;
 	const { threadID, messageID } = event;
-  const { weather } = global.apiryuko;
+  const { weather } = global.apirebel;
 	
 	var city = args.join(" ");
 	if (city.length == 0) return throwError(this.config.name, threadID, messageID);

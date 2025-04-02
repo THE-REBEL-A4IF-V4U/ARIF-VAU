@@ -23,7 +23,7 @@ if (!fs.existsSync(pathFile))
 
 module.exports. run = async ({ api, event, args }) => {
    try {
-     const logger = require("../../viper/catalogs/viperc.js");
+     const logger = require("../../rebel/catalogs/rebelc.js");
      if (args[0] == 'on') {
        fs.writeFileSync(pathFile, 'true');
        api.sendMessage('the autoseen function is now enabled for new messages.', event.threadID, event.messageID);

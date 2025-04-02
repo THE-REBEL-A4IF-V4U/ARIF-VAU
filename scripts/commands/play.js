@@ -52,7 +52,7 @@ module.exports.handleReply = async function ({ api, event, handleReply }) {
             body: `title : ${data.title}\ntime : ${this.convertHMS(data.dur)}\nprocessing time : ${Math.floor((Date.now()- data.timestart)/1000)} seconds`,
             attachment: fs.createReadStream(path)}, event.threadID, ()=> fs.unlinkSync(path), 
          event.messageID)
-            
+
     }
     catch (e) { return console.log(e) }
 }
@@ -81,7 +81,7 @@ module.exports.run = async function ({ api, event, args }) {
                 body: `title : ${data.title}\ntime : ${this.convertHMS(data.dur)}\nprocessing time : ${Math.floor((Date.now()- data.timestart)/1000)} seconds`,
                 attachment: fs.createReadStream(path)}, event.threadID, ()=> fs.unlinkSync(path), 
             event.messageID)
-            
+
         }
         catch (e) { return console.log(e) }
     } else {

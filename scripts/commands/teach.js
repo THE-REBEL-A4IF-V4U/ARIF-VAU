@@ -16,7 +16,7 @@ module.exports.run = async ({ api, event, args }) => {
     let { messageID, threadID } = event;
     let work = args.join(" ");
     let fw = work.indexOf(" - ");
-    let { teach } = global.apiryuko;
+    let { teach } = global.apirebel;
     if (fw == -1) {
         api.sendMessage(`wrong format\ntry : ${global.config.PREFIX}${this.config.name} (your ask) - (my answer)`,threadID,messageID);
     } else {

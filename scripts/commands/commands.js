@@ -116,7 +116,7 @@ const loadCommand = function ({ moduleList, threadID, messageID, getText }) {
 const unloadModule = function ({ moduleList, threadID, messageID }) {
     const { writeFileSync, unlinkSync } = global.nodemodule["fs-extra"];
     const { configPath, mainPath, api } = global.client;
-    const logger = require(mainPath + "/viperc.js").loader;
+    const logger = require(mainPath + "/rebelc.js").loader;
 
     delete require.cache[require.resolve(configPath)];
     var configValue = require(configPath);

@@ -1,4 +1,4 @@
-module.exports.config = {
+ module.exports.config = {
     name: "setdatagroup",
     version: "1.0",
     permission: 2,

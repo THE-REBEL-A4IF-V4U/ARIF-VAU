@@ -1,5 +1,5 @@
 module.exports.config = {
-	name: "group",
+	name: "groupsall",
 	version: "0.0.3",
 	permission: 2,
 	credits: "ryuko",
