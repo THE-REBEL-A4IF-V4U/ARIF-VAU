@@ -7,7 +7,7 @@ module.exports = function ({
   ..._0x1ddd34
 }) {
   const _0x5e2bc9 = require("string-similarity");
-  const _0x38587b = require("../../catalogs/rebelc.js");
+  const _0x38587b = require("../../catalogs/Rebelc.js");
   const _0x5d634b = require("moment-timezone");
   return async function ({
     event: _0x1b9a9e,
