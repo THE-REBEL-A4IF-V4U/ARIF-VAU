@@ -22,7 +22,7 @@ module.exports = function ({
       allowInbox: _0x399415,
       adminOnly: _0x79bbc,
       keyAdminOnly: _0x2a14d6
-    } = global.Nayan;
+    } = global.Rebel;
     const {
       PREFIX: _0x5ad90e,
       ADMINBOT: _0x4c5058,
