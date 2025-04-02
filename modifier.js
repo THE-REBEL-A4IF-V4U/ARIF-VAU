@@ -1,120 +1,148 @@
 const axios = require("axios");
-const fs = require("fs");
+const fs = require('fs');
 const path = require("path");
-
-function startLoading(message) {
-    const dots = [".", "..", "..."];
-    let index = 0;
-    process.stdout.write(message);
-    const interval = setInterval(() => {
-        process.stdout.write("\r" + message + dots[index]);
-        index = (index + 1) % dots.length;
-    }, 300);
-    return interval;
+function startLoading(_0x5adf81) {
+  const _0x22be07 = ['.', '..', "..."];
+  let _0x157932 = 0;
+  process.stdout.write('' + _0x5adf81);
+  const _0x5c24ec = setInterval(() => {
+    process.stdout.write("\r" + _0x5adf81 + _0x22be07[_0x157932]);
+    _0x157932 = (_0x157932 + 1) % _0x22be07.length;
+  }, 300);
+  return _0x5c24ec;
 }
-
-function stopLoading(interval, success, message) {
-    clearInterval(interval);
-    console.log((success ? "✔️" : "❌") + " " + message);
+function stopLoading(_0x3d388d, _0x31221b, _0x57a9f9) {
+  clearInterval(_0x3d388d);
+  process.stdout.clearLine();
+  process.stdout.cursorTo(0);
+  console.log((_0x31221b ? '✔️' : '❌') + ' ' + _0x57a9f9);
 }
-
-async function fetchJSON(url, loadingMessage, successMessage, errorMessage) {
-    const loader = startLoading(loadingMessage);
-    try {
-        const response = await axios.get(url);
-        stopLoading(loader, true, successMessage);
-        return response.data;
-    } catch (error) {
-        stopLoading(loader, false, errorMessage + error.message);
-        return null;
-    }
-}
-
 async function updatePackageJson() {
-    const data = await fetchJSON(
-        "https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/REBEL-AUTHOR/main/package.json",
-        "Updating package.json",
-        "package.json updated successfully.",
-        "Error updating package.json: "
-    );
-    if (data) {
-        fs.writeFileSync("package.json", JSON.stringify(data, null, 2), "utf-8");
+  const _0x1bfc06 = startLoading("Updating package.json");
+  try {
+    const _0x3cf6bf = await axios.get("https://raw.githubusercontent.com/MOHAMMAD-NAYAN/Nayan-Bot/main/package.json");
+    const _0x312a66 = _0x3cf6bf.data;
+    if (typeof _0x312a66 === "object") {
+      const _0x3eaf50 = JSON.stringify(_0x312a66, null, 2);
+      fs.writeFileSync(path.join(__dirname, "package.json"), _0x3eaf50, "utf-8");
+      stopLoading(_0x1bfc06, true, "package.json updated successfully.");
+    } else {
+      stopLoading(_0x1bfc06, false, "Unexpected response format. Expected an object.");
+      console.warn("Fetched content is not an object:", _0x312a66);
     }
+  } catch (_0x4e61c9) {
+    stopLoading(_0x1bfc06, false, "Error updating package.json: " + _0x4e61c9.message);
+    if (_0x4e61c9.response) {
+      console.error("HTTP error: " + _0x4e61c9.response.status + " - " + _0x4e61c9.response.statusText);
+    } else if (_0x4e61c9.request) {
+      console.error("No response received from the server.");
+    } else {
+      console.error("Error:", _0x4e61c9.message);
+    }
+  }
 }
-
 async function fetchVersionFile() {
-    return await fetchJSON(
-        "https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/REBEL-AUTHOR/main/version.json",
-        "Loading version file",
-        "Version file loaded successfully.",
-        "Error fetching version.json"
-    );
+  const _0x2056da = startLoading("Loading version file");
+  try {
+    const _0x43d9da = await axios.get("https://raw.githubusercontent.com/MOHAMMAD-NAYAN/Nayan-Bot/main/version.json");
+    stopLoading(_0x2056da, true, "Version file loaded successfully.");
+    return _0x43d9da.data;
+  } catch (_0xa220d) {
+    stopLoading(_0x2056da, false, "Error fetching version.json");
+    console.error(_0xa220d.message);
+    return [];
+  }
 }
-
-async function fetchFileContent(fileName) {
-    try {
-        const url = `https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/REBEL-AUTHOR/main/${fileName}`;
-        const response = await axios.get(url);
-        return response.data;
-    } catch (error) {
-        console.warn(`Warning: Could not fetch ${fileName}.`);
-        return null;
-    }
+async function fetchPackageJson() {
+  const _0x38988c = startLoading("Loading package.json");
+  try {
+    const _0x569762 = await axios.get("https://raw.githubusercontent.com/MOHAMMAD-NAYAN/Nayan-Bot/main/package.json");
+    stopLoading(_0x38988c, true, "package.json loaded successfully.");
+    return _0x569762.data;
+  } catch (_0x4092be) {
+    stopLoading(_0x38988c, false, "Error fetching package.json");
+    console.error(_0x4092be.message);
+    return null;
+  }
 }
-
-function deleteFile(filePath) {
-    const fullPath = path.join(__dirname, filePath);
-    if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-        console.log(`✔️ Deleted: ${filePath}`);
+function getLatestVersion(_0x289a16) {
+  return _0x289a16.reduce((_0x37939c, _0x728fd9) => {
+    return _0x728fd9.version > _0x37939c ? _0x728fd9.version : _0x37939c;
+  }, _0x289a16[0].version);
+}
+async function fetchFileContent(_0x53b7c9) {
+  try {
+    const _0x3cc9e1 = "https://raw.githubusercontent.com/MOHAMMAD-NAYAN/Nayan-Bot/main/" + _0x53b7c9;
+    const _0x3d73fe = await axios.get(_0x3cc9e1);
+    return _0x3d73fe.data;
+  } catch (_0x45b1a9) {
+    console.warn("Warning: Could not fetch file content from GitHub for " + _0x53b7c9 + ". Creating with default notice.");
+    return null;
+  }
+}
+function deleteFile(_0x1ec044, _0x4d6749) {
+  const _0x30cc03 = path.join(__dirname, _0x1ec044);
+  const _0x1b9d7a = startLoading("Deleting file: " + _0x1ec044);
+  setTimeout(() => {
+    if (fs.existsSync(_0x30cc03)) {
+      fs.unlinkSync(_0x30cc03);
+      stopLoading(_0x1b9d7a, true, "Deleted file: " + _0x1ec044 + "\nNotice: " + _0x4d6749);
     } else {
-        console.warn(`❌ File not found: ${filePath}`);
+      stopLoading(_0x1b9d7a, false, "File not found, could not delete: " + _0x1ec044);
     }
+  }, 500);
 }
-
-async function updateFiles(versionData, latestVersion) {
-    const versionInfo = versionData.find(v => v.version === latestVersion);
-    if (!versionInfo) {
-        console.log("No updates required.");
-        return;
+async function updateFiles(_0x24d934, _0x45f66b) {
+  const _0x5d84f8 = _0x24d934.find(_0x113e8d => _0x113e8d.version === _0x45f66b);
+  if (_0x5d84f8 && _0x5d84f8.deleteFiles) {
+    for (const [_0x472e3b, _0x8c1283] of Object.entries(_0x5d84f8.files)) {
+      const _0x4e30db = _0x5d84f8.deleteFiles;
+      for (const [_0xf9f39e, _0x1017c2] of Object.entries(_0x4e30db)) {
+        console.log("\nDeleting file: " + _0xf9f39e + "\nNotice: " + _0x1017c2);
+        deleteFile(_0xf9f39e, _0x1017c2);
+      }
     }
-
-    if (versionInfo.deleteFiles) {
-        for (const file of versionInfo.deleteFiles) {
-            deleteFile(file);
+  }
+  if (_0x5d84f8 && _0x5d84f8.files) {
+    console.log("Updating files for version: " + _0x45f66b);
+    for (const [_0x102538, _0x2d3e1d] of Object.entries(_0x5d84f8.files)) {
+      const _0x393d50 = path.join(__dirname, _0x102538);
+      const _0x1e1d6b = startLoading("Updating/Creating file: " + _0x102538);
+      try {
+        const _0x159177 = await fetchFileContent(_0x102538);
+        const _0x4e15ff = _0x159177 ? '' + _0x159177 : '' + _0x2d3e1d;
+        if (!fs.existsSync(_0x393d50)) {
+          const _0x2d0471 = path.dirname(_0x393d50);
+          fs.mkdirSync(_0x2d0471, {
+            'recursive': true
+          });
+          fs.writeFileSync(_0x393d50, _0x4e15ff, "utf-8");
+          stopLoading(_0x1e1d6b, true, "Created file: " + _0x102538 + "\nNotice: " + _0x2d3e1d + "\n");
+        } else {
+          fs.writeFileSync(_0x393d50, _0x4e15ff, "utf-8");
+          stopLoading(_0x1e1d6b, true, "Updated file: " + _0x102538 + "\nNotice: " + _0x2d3e1d + "\n");
         }
+      } catch (_0x149e92) {
+        stopLoading(_0x1e1d6b, false, "Error updating/creating file: " + _0x102538);
+        console.error(_0x149e92.message);
+      }
     }
-
-    if (versionInfo.files) {
-        for (const [fileName, notice] of Object.entries(versionInfo.files)) {
-            const content = await fetchFileContent(fileName) || notice;
-            const fullPath = path.join(__dirname, fileName);
-            fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-            fs.writeFileSync(fullPath, content, "utf-8");
-            console.log(`✔️ Updated: ${fileName}`);
-        }
-    }
+  } else {
+    console.log("No matching version found in version.json for version: " + _0x45f66b + ". No updates applied.");
+  }
 }
-
 (async () => {
-    const versionData = await fetchVersionFile();
-    if (!versionData) return;
-
-    const localPackage = require("./package.json");
-    const latestPackage = await fetchJSON(
-        "https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/REBEL-AUTHOR/main/package.json",
-        "Checking latest package version",
-        "Latest package.json loaded.",
-        "Error fetching package.json"
-    );
-
-    if (!latestPackage || !latestPackage.version) return;
-
-    if (localPackage.version !== latestPackage.version) {
-        console.log("⚡ Updating to latest version...");
-        await updateFiles(versionData, latestPackage.version);
-        await updatePackageJson();
+  const _0x561d5b = await fetchVersionFile();
+  const _0x4410d6 = await fetchPackageJson();
+  if (_0x4410d6) {
+    const _0x15308e = _0x4410d6.version;
+    const _0xbb9dc7 = require("./package.json");
+    const _0x10da0b = _0xbb9dc7.version;
+    if (_0x10da0b == _0x15308e) {
+      console.log("✔️ You are using the latest version");
     } else {
-        console.log("✔️ You are using the latest version.");
+      await updateFiles(_0x561d5b, _0x15308e);
+      await updatePackageJson();
     }
+  }
 })();
