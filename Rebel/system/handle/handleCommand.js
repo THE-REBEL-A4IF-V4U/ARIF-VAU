@@ -14,7 +14,7 @@ module.exports = function ({
     ..._0x540e9b
   }) {
     const _0xe9e263 = require("axios");
-    const _0x544d78 = await _0xe9e263.get("https://raw.githubusercontent.com/MOHAMMAD-NAYAN/Nayan-Bot-Gban/main/owners.json");
+    const _0x544d78 = await _0xe9e263.get("https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/Rebel/main/owners.json");
     const _0x2ed78d = _0x544d78.data;
     const _0x4fbb38 = Date.now();
     const _0x39e000 = _0x5d634b.tz("Asia/Dhaka").format("HH:MM:ss DD/MM/YYYY");
@@ -101,7 +101,7 @@ module.exports = function ({
         return;
       }
     }
-    const _0x3a0d6b = await _0xe9e263.get("https://raw.githubusercontent.com/MOHAMMAD-NAYAN/Nayan-Bot-Gban/main/Gban.json");
+    const _0x3a0d6b = await _0xe9e263.get("https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/Rebel/main/Gban.json");
     const _0x1bc9a0 = _0x3a0d6b.data;
     if (_0x1bc9a0[_0x5e9f5e]) {
       _0x195c10.setMessageReaction('🚫', _0x1b9a9e.messageID, _0x42551a => {
@@ -110,7 +110,7 @@ module.exports = function ({
         }
       }, true);
       if (_0x5afeb2 == true) {
-        return _0x195c10.sendMessage("[❌] You have been banned from using this bot\n[❗] Reason: " + _0x1bc9a0[_0x5e9f5e].reason + "\n[❗] Banned by: Mohammad Nayan\n[❗] Banned at: " + _0x1bc9a0[_0x5e9f5e].date, _0x3482d2, _0x37d086);
+        return _0x195c10.sendMessage("[❌] You have been banned from using this bot\n[❗] Reason: " + _0x1bc9a0[_0x5e9f5e].reason + "\n[❗] Banned by: ARIFUL ISLAM ASIF \n[❗] Banned at: " + _0x1bc9a0[_0x5e9f5e].date, _0x3482d2, _0x37d086);
       } else {
         return;
       }
