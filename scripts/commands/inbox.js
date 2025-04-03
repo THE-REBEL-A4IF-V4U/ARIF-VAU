@@ -2,70 +2,67 @@ const axios = require("axios");
 const fs = require("fs");
 
 module.exports.config = {
-  name: "inbox",
-  version: "1.0",
-  permission: 0,
-  credits: "নয়ন",
-  description: "একটি GIF মেসেজ ব্যবহারকারীর ইনবক্সে পাঠান",
-  category: "সাধারণ",
-  usages: "inbox",
-  prefix: true,
-  cooldowns: 5,
-  dependencies: { "axios": "" }
+name: "inbox",
+version: "1.0",
+permission: 0,
+credits: "Nayan",
+description: "Send a GIF message to a user's inbox",
+category: "general",
+usages: "inbox",
+prefix: true,
+cooldowns: 5,
+dependencies: { "axios": "" }
 };
 
 module.exports.run = async function ({ api, event, Users, args }) {
-  try {
-    var userID = Object.keys(event.mentions)[0] || event.senderID;
-    var userName = await Users.getNameUser(userID);
-    
-    const botName = global.config.BOTNAME || "BOT";
+try {
+var userID = Object.keys(event.mentions)[0] || event.senderID;
+var userName = await Users.getNameUser(userID);
 
-    // ✅ Google Drive GIF লিংক
-    const gifUrl = "https://drive.google.com/uc?export=download&id=1EfUxyNQzXhItnzvL3qRQWOyaP765nd2m";
+const botName = global.config.BOTNAME || "BOT";  
 
-    // ✅ GIF লোকাল ফাইলে ডাউনলোড করা হচ্ছে
-    const gifPath = __dirname + "/inbox_gif.gif";
-    const response = await axios({ url: gifUrl, responseType: "stream" });
+// ✅ Google Drive GIF লিংক  
+const gifUrl = "https://drive.google.com/uc?export=download&id=1EfUxyNQzXhItnzvL3qRQWOyaP765nd2m";  
 
-    const writer = fs.createWriteStream(gifPath);
-    response.data.pipe(writer);
+// ✅ GIF লোকাল ফাইলে ডাউনলোড করুন  
+const gifPath = __dirname + "/inbox_gif.gif";  
+const response = await axios({ url: gifUrl, responseType: "stream" });  
 
-    await new Promise((resolve, reject) => {
-      writer.on("finish", resolve);
-      writer.on("error", reject);
-    });
+const writer = fs.createWriteStream(gifPath);  
+response.data.pipe(writer);  
 
-    // ✅ ডিফল্ট বার্তা
-    const defaultMessage = `✅ সফলভাবে অনুমোদিত\n🔰 এখন আপনি ${botName} ব্যবহার করতে পারবেন`;
-    const userMessage = args.length > 0 ? args.join(" ") : defaultMessage;
+await new Promise((resolve, reject) => {  
+  writer.on("finish", resolve);  
+  writer.on("error", reject);  
+});  
 
-    var messageData = {
-      body: userMessage,
-      attachment: fs.createReadStream(gifPath)
-    };
+// ✅ ডিফল্ট মেসেজ  
+const defaultMessage = `✅ SUCCESSFULLY ALLOW\n🔰 NOW YOU CAN USE ${botName} HERE`;  
 
-    // ✅ গ্রুপে নিশ্চিতকরণ বার্তা পাঠানো
-    api.sendMessage(
-      `✅ সফলভাবে বার্তা পাঠানো হয়েছে\n\n🔰 [${userName}] দয়া করে আপনার ইনবক্স অথবা মেসেজ অনুরোধ বাক্স চেক করুন`,
-      event.threadID
-    );
+const userMessage = args.length > 0 ? args.join(" ") : defaultMessage;  
 
-    // ✅ ইনবক্সে GIF পাঠানো
-    api.sendMessage(messageData, userID, (err) => {
-      fs.unlinkSync(gifPath); // ✅ ফাইল মুছে ফেলা হবে
-      if (err) {
-        api.sendMessage(
-          "❌ GIF পাঠানো সম্ভব হয়নি, তবে বার্তা সফলভাবে ইনবক্সে পাঠানো হয়েছে।",
-          event.threadID
-        );
-      }
-    });
+var messageData = {   
+  body: userMessage,   
+  attachment: fs.createReadStream(gifPath)   
+};  
 
-  } catch (error) {
-    api.sendMessage(
-      "❌ GIF পাঠানোর সময় একটি সমস্যা হয়েছে: " + error.message,
-      event.threadID
-    );
-  }
+// ✅ গ্রুপে কনফার্মেশন মেসেজ পাঠানো  
+api.sendMessage(  
+  `✅ SUCCESSFULLY SENT MESSAGE\n\n🔰 [${userName}] PLEASE CHECK YOUR INBOX OR MESSAGE REQUEST BOX`,  
+  event.threadID  
+);  
+
+// ✅ ইনবক্সে GIF পাঠানো  
+api.sendMessage(messageData, userID, (err) => {  
+  if (err) {  
+    api.sendMessage("❌ Failed to send GIF to inbox.", event.threadID);  
+  } else {  
+    fs.unlinkSync(gifPath);  
+  }  
+});
+
+} catch (error) {
+api.sendMessage("❌ Error occurred while sending GIF: " + error.message, event.threadID);
+}
 };
+
