@@ -1,38 +1,71 @@
-const axios = require("axios"); const fs = require("fs");
+const axios = require("axios");
+const fs = require("fs");
 
-module.exports.config = { name: "inbox", version: "1.0", permission: 0, credits: "REBEL", description: "Send a GIF message to a user's inbox", category: "general", usages: "inbox", prefix: true, cooldowns: 5, dependencies: { "axios": "" } };
+module.exports.config = {
+  name: "inbox",
+  version: "1.0",
+  permission: 0,
+  credits: "Nayan",
+  description: "Send a GIF message to a user's inbox",
+  category: "general",
+  usages: "inbox",
+  prefix: true,
+  cooldowns: 5,
+  dependencies: { "axios": "" }
+};
 
-module.exports.run = async function ({ api, event, Users, args }) { try { var userID = Object.keys(event.mentions)[0] || event.senderID; var userName = await Users.getNameUser(userID); const botName = global.config.BOTNAME || "BOT";
+module.exports.run = async function ({ api, event, Users, args }) {
+  try {
+    var userID = Object.keys(event.mentions)[0] || event.senderID;
+    var userName = await Users.getNameUser(userID);
+    
+    const botName = global.config.BOTNAME || "BOT";
 
-// ✅ Imgur GIF লিংক
-const gifUrl = "https://i.imgur.com/VGaHChR.gif"; // নিশ্চিত করা লিংক
+    // ✅ GIF লিংক (Imgur)
+    const gifUrl = "https://imgur.com/a/VGaHChR";
 
-// ✅ ডিফল্ট মেসেজ
-const defaultMessage = `✅ SUCCESSFULLY ALLOW\n🔰 NOW YOU CAN USE ${botName} HERE`;
-const userMessage = args.length > 0 ? args.join(" ") : defaultMessage;
+    // ✅ GIF লোকাল ফাইলে ডাউনলোড করুন
+    const gifPath = __dirname + "/inbox_gif.gif";
+    const response = await axios({ url: gifUrl, responseType: "stream" });
 
-var messageData = { body: `${userMessage}` };
+    const writer = fs.createWriteStream(gifPath);
+    response.data.pipe(writer);
 
-// ✅ GIF লোড করা
-try {
-  const response = await axios.get(gifUrl, { responseType: "stream" });
-  messageData.attachment = response.data;
-} catch (error) {
-  messageData.body += "\n\n❌ GIF not available, sending text only.";
-}
+    await new Promise((resolve, reject) => {
+      writer.on("finish", resolve);
+      writer.on("error", reject);
+    });
 
-// ✅ গ্রুপে কনফার্মেশন মেসেজ পাঠানো
-api.sendMessage(
-  `✅ SUCCESSFULLY SENT MESSAGE\n\n🔰 [${userName}] PLEASE CHECK YOUR INBOX OR MESSAGE REQUEST BOX`,
-  event.threadID
-);
+    // ✅ ডিফল্ট মেসেজ
+    const defaultMessage = `✅ SUCCESSFULLY ALLOW\n🔰 NOW YOU CAN USE ${botName} HERE`;
+    const userMessage = args.length > 0 ? args.join(" ") : defaultMessage;
 
-// ✅ ইনবক্সে মেসেজ পাঠানো
-api.sendMessage(messageData, userID, (err) => {
-  if (err) {
-    api.sendMessage("❌ Failed to send message to inbox.", event.threadID);
+    var messageData = {
+      body: userMessage,
+      attachment: fs.createReadStream(gifPath)
+    };
+
+    // ✅ গ্রুপে কনফার্মেশন মেসেজ পাঠানো
+    api.sendMessage(
+      `✅ SUCCESSFULLY SENT MESSAGE\n\n🔰 [${userName}] PLEASE CHECK YOUR INBOX OR MESSAGE REQUEST BOX`,
+      event.threadID
+    );
+
+    // ✅ ইনবক্সে GIF পাঠানো
+    api.sendMessage(messageData, userID, (err) => {
+      fs.unlinkSync(gifPath); // ✅ GIF ডিলিট করা হবে ইনবক্সে পাঠানোর পর
+      if (err) {
+        api.sendMessage(
+          "❌ GIF পাঠানো সম্ভব হয়নি, তবে আপনার বার্তা সফলভাবে ইনবক্সে পাঠানো হয়েছে।",
+          event.threadID
+        );
+      }
+    });
+
+  } catch (error) {
+    api.sendMessage(
+      "❌ Error occurred while sending message: " + error.message,
+      event.threadID
+    );
   }
-});
-
-} catch (error) { api.sendMessage("❌ Error occurred while sending message: " + error.message, event.threadID); } };
-
+};
