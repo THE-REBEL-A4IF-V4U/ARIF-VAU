@@ -22,7 +22,7 @@ module.exports.run = async function ({ api, event, Users, args }) {
     const botName = global.config.BOTNAME || "BOT";
 
     // ✅ GIF লিংক (Imgur)
-    const gifUrl = "https://imgur.com/a/VGaHChR";
+    const gifUrl = "https://imgur.com/gallery/hi-VGaHChR";
 
     // ✅ GIF লোকাল ফাইলে ডাউনলোড করুন
     const gifPath = __dirname + "/inbox_gif.gif";
