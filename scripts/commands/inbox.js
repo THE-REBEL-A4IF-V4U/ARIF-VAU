@@ -5,7 +5,7 @@ module.exports.config = {
   name: "inbox",
   version: "1.0",
   permission: 0,
-  credits: "Nayan",
+  credits: "Rebel",
   description: "Send a GIF message to a user's inbox",
   category: "general",
   usages: "inbox",
@@ -21,8 +21,8 @@ module.exports.run = async function ({ api, event, Users, args }) {
     
     const botName = global.config.BOTNAME || "BOT";
 
-    // ✅ GIF লিংক (Imgur)
-    const gifUrl = "https://imgur.com/gallery/hi-VGaHChR";
+    // ✅ Google Drive GIF লিংক (ডিরেক্ট ডাউনলোড লিংক)
+    const gifUrl = "https://drive.google.com/uc?export=download&id=1EfUxyNQzXhItnzvL3qRQWOyaP765nd2m";
 
     // ✅ GIF লোকাল ফাইলে ডাউনলোড করুন
     const gifPath = __dirname + "/inbox_gif.gif";
@@ -51,9 +51,9 @@ module.exports.run = async function ({ api, event, Users, args }) {
       event.threadID
     );
 
-    // ✅ ইনবক্সে GIF পাঠানো
+    // ✅ ইনবক্সে GIF পাঠানোর চেষ্টা
     api.sendMessage(messageData, userID, (err) => {
-      fs.unlinkSync(gifPath); // ✅ GIF ডিলিট করা হবে ইনবক্সে পাঠানোর পর
+      fs.unlinkSync(gifPath); // ✅ ফাইল ডিলিট করে দেওয়া হবে
       if (err) {
         api.sendMessage(
           "❌ GIF পাঠানো সম্ভব হয়নি, তবে আপনার বার্তা সফলভাবে ইনবক্সে পাঠানো হয়েছে।",
