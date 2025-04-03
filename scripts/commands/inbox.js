@@ -22,7 +22,7 @@ module.exports.run = async function ({ api, event, Users, args }) {
     const botName = global.config.BOTNAME || "BOT";
 
     // ✅ Imgur GIF লিংক
-    const gifUrl = "https://i.imgur.com/VGaHChR.gif"; // নতুন Imgur লিংক
+    const gifUrl = "https://imgur.com/a/VGaHChR"; // নতুন Imgur লিংক
 
     // ✅ ডিফল্ট মেসেজ
     const defaultMessage = `✅ SUCCESSFULLY ALLOW\n🔰 NOW YOU CAN USE ${botName} HERE`;
