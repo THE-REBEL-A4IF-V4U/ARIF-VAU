@@ -5,7 +5,7 @@ module.exports.config = {
   name: "inbox",
   version: "1.0",
   permission: 0,
-  credits: "Nayan",
+  credits: "REBEL",
   description: "Send a GIF message to a user's inbox",
   category: "general",
   usages: "inbox",
@@ -21,20 +21,8 @@ module.exports.run = async function ({ api, event, Users, args }) {
     
     const botName = global.config.BOTNAME || "BOT";
 
-    // ✅ Google Drive GIF লিংক
-    const gifUrl = "https://drive.google.com/uc?export=download&id=1EfUxyNQzXhItnzvL3qRQWOyaP765nd2m";
-
-    // ✅ GIF লোকাল ফাইলে ডাউনলোড করুন
-    const gifPath = __dirname + "/inbox_gif.gif";
-    const response = await axios({ url: gifUrl, responseType: "stream" });
-
-    const writer = fs.createWriteStream(gifPath);
-    response.data.pipe(writer);
-
-    await new Promise((resolve, reject) => {
-      writer.on("finish", resolve);
-      writer.on("error", reject);
-    });
+    // ✅ Imgur GIF লিংক
+    const gifUrl = "https://i.imgur.com/VGaHChR.gif"; // নতুন Imgur লিংক
 
     // ✅ ডিফল্ট মেসেজ
     const defaultMessage = `✅ SUCCESSFULLY ALLOW\n🔰 NOW YOU CAN USE ${botName} HERE`;
@@ -42,8 +30,7 @@ module.exports.run = async function ({ api, event, Users, args }) {
     const userMessage = args.length > 0 ? args.join(" ") : defaultMessage;
 
     var messageData = { 
-      body: userMessage, 
-      attachment: fs.createReadStream(gifPath) 
+      body: `${userMessage}\n\n🎥 GIF: ${gifUrl}`
     };
 
     // ✅ গ্রুপে কনফার্মেশন মেসেজ পাঠানো
@@ -52,12 +39,10 @@ module.exports.run = async function ({ api, event, Users, args }) {
       event.threadID
     );
 
-    // ✅ ইনবক্সে GIF পাঠানো
+    // ✅ ইনবক্সে GIF পাঠানো (লিংক হিসেবে)
     api.sendMessage(messageData, userID, (err) => {
       if (err) {
         api.sendMessage("❌ Failed to send GIF to inbox.", event.threadID);
-      } else {
-        fs.unlinkSync(gifPath);
       }
     });
 
