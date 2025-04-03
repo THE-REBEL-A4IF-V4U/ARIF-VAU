@@ -32,7 +32,7 @@ var callback = () => api.sendMessage({body:`
 𝐓𝐇𝐄 𝐑𝐄𝐁𝐄𝐋 𝐒𝐐𝐔𝐀𝐃  
 --------------------------------------------
 
-FACEBOOK :  ARIF CHOWDHURY 
+FACEBOOK :  MD ARIFUL ISLAM ASIF 
 
 GENDER : MALE
 
@@ -42,7 +42,7 @@ Relationship : SINGLE 😓
 
 Work : ****
 
-FACEBOOK LINK : https://www.facebook.com/100009551241662
+FACEBOOK LINK : https://www.facebook.com/100006473882758
 
 Wp : wa.me/+8801329593053
 
