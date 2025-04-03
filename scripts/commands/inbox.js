@@ -5,9 +5,9 @@ module.exports.config = {
   name: "inbox",
   version: "1.0",
   permission: 0,
-  credits: "Rebel",
-  description: "Send a GIF message to a user's inbox",
-  category: "general",
+  credits: "নয়ন",
+  description: "একটি GIF মেসেজ ব্যবহারকারীর ইনবক্সে পাঠান",
+  category: "সাধারণ",
   usages: "inbox",
   prefix: true,
   cooldowns: 5,
@@ -21,10 +21,10 @@ module.exports.run = async function ({ api, event, Users, args }) {
     
     const botName = global.config.BOTNAME || "BOT";
 
-    // ✅ Google Drive GIF লিংক (ডিরেক্ট ডাউনলোড লিংক)
+    // ✅ Google Drive GIF লিংক
     const gifUrl = "https://drive.google.com/uc?export=download&id=1EfUxyNQzXhItnzvL3qRQWOyaP765nd2m";
 
-    // ✅ GIF লোকাল ফাইলে ডাউনলোড করুন
+    // ✅ GIF লোকাল ফাইলে ডাউনলোড করা হচ্ছে
     const gifPath = __dirname + "/inbox_gif.gif";
     const response = await axios({ url: gifUrl, responseType: "stream" });
 
@@ -36,8 +36,8 @@ module.exports.run = async function ({ api, event, Users, args }) {
       writer.on("error", reject);
     });
 
-    // ✅ ডিফল্ট মেসেজ
-    const defaultMessage = `✅ SUCCESSFULLY ALLOW\n🔰 NOW YOU CAN USE ${botName} HERE`;
+    // ✅ ডিফল্ট বার্তা
+    const defaultMessage = `✅ সফলভাবে অনুমোদিত\n🔰 এখন আপনি ${botName} ব্যবহার করতে পারবেন`;
     const userMessage = args.length > 0 ? args.join(" ") : defaultMessage;
 
     var messageData = {
@@ -45,18 +45,18 @@ module.exports.run = async function ({ api, event, Users, args }) {
       attachment: fs.createReadStream(gifPath)
     };
 
-    // ✅ গ্রুপে কনফার্মেশন মেসেজ পাঠানো
+    // ✅ গ্রুপে নিশ্চিতকরণ বার্তা পাঠানো
     api.sendMessage(
-      `✅ SUCCESSFULLY SENT MESSAGE\n\n🔰 [${userName}] PLEASE CHECK YOUR INBOX OR MESSAGE REQUEST BOX`,
+      `✅ সফলভাবে বার্তা পাঠানো হয়েছে\n\n🔰 [${userName}] দয়া করে আপনার ইনবক্স অথবা মেসেজ অনুরোধ বাক্স চেক করুন`,
       event.threadID
     );
 
-    // ✅ ইনবক্সে GIF পাঠানোর চেষ্টা
+    // ✅ ইনবক্সে GIF পাঠানো
     api.sendMessage(messageData, userID, (err) => {
-      fs.unlinkSync(gifPath); // ✅ ফাইল ডিলিট করে দেওয়া হবে
+      fs.unlinkSync(gifPath); // ✅ ফাইল মুছে ফেলা হবে
       if (err) {
         api.sendMessage(
-          "❌ GIF পাঠানো সম্ভব হয়নি, তবে আপনার বার্তা সফলভাবে ইনবক্সে পাঠানো হয়েছে।",
+          "❌ GIF পাঠানো সম্ভব হয়নি, তবে বার্তা সফলভাবে ইনবক্সে পাঠানো হয়েছে।",
           event.threadID
         );
       }
@@ -64,7 +64,7 @@ module.exports.run = async function ({ api, event, Users, args }) {
 
   } catch (error) {
     api.sendMessage(
-      "❌ Error occurred while sending message: " + error.message,
+      "❌ GIF পাঠানোর সময় একটি সমস্যা হয়েছে: " + error.message,
       event.threadID
     );
   }
