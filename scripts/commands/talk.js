@@ -55,7 +55,7 @@ module.exports.run = async ({ api, event, args, permssion }) => {
     const path = resolve(__dirname, 'system', 'system.json');
     const { threadID, messageID } = event;
     const database = require(path);
-    const { talk } = global.apirebel;
+    const { talk } = global.apiryuko;
     const { ryuko } = database;
 
     if (!args[0]) { api.sendMessage("enter a message", threadID, messageID) } else {
