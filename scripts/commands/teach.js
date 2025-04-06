@@ -1,3 +1,6 @@
+const fs = require('fs');
+const axios = require('axios');
+
 module.exports.config = {
     name: "teach",
     version: "1.0.2",
@@ -10,14 +13,13 @@ module.exports.config = {
     cooldowns: 0
 };
 
-const axios = require('axios');
-
 module.exports.run = async ({ api, event, args }) => {
     const { messageID, threadID } = event;
     const input = args.join(" ");
     const separator = input.indexOf(" - ");
     const { rebelteach } = global.apirebel;
 
+    // Check for correct format
     if (separator === -1) {
         return api.sendMessage(`Wrong format.\nTry: ${global.config.PREFIX}${this.config.name} your question - your answer`, threadID, messageID);
     }
@@ -30,6 +32,19 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     try {
+        // Save question-answer pair to rebel.json (or any storage you prefer)
+        const dataFile = './data/rebel.json';
+        let data = {};
+        
+        if (fs.existsSync(dataFile)) {
+            data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+        }
+
+        // Add the new Q&A pair
+        data[ask] = answer;
+        fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+
+        // Teach the bot by sending the data to the API
         const url = `${rebelteach}${encodeURIComponent(ask)}=${encodeURIComponent(answer)}`;
         const res = await axios.get(url);
 
@@ -43,5 +58,30 @@ module.exports.run = async ({ api, event, args }) => {
         }
     } catch (err) {
         return api.sendMessage("❌ Failed to connect to Rebel API.", threadID, messageID);
+    }
+};
+
+// Function to handle questions asked by users
+module.exports.answerQuestion = async ({ api, event }) => {
+    const { threadID, messageID } = event;
+    const userQuestion = event.body.toLowerCase().trim();  // Convert to lowercase for easier matching
+
+    try {
+        // Load the Q&A data
+        const dataFile = './data/rebel.json';
+        if (fs.existsSync(dataFile)) {
+            const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+
+            // Check if the question exists
+            if (data[userQuestion]) {
+                return api.sendMessage(data[userQuestion], threadID, messageID);  // Send the answer
+            } else {
+                return api.sendMessage("❓ I don't know the answer to that question. Please teach me.", threadID, messageID);
+            }
+        } else {
+            return api.sendMessage("❓ I don't know the answer to that question. Please teach me.", threadID, messageID);
+        }
+    } catch (err) {
+        return api.sendMessage("❌ Error occurred while retrieving the answer.", threadID, messageID);
     }
 };
