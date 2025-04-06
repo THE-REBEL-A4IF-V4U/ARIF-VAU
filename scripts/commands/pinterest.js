@@ -14,11 +14,11 @@ module.exports.run = async function({ api, event, args }) {
     const fs = require("fs-extra");
     const request = require("request");
     const keySearch = args.join(" ");
-    const { ryukodev } = global.apirebel;
+    const { rebeldev } = global.apirebel;
     if(keySearch.includes("-") == false) return api.sendMessage('use : -pinterest anime - 10', event.threadID, event.messageID)
     const keySearchs = keySearch.substr(0, keySearch.indexOf('-'))
     const numberSearch = keySearch.split("-").pop() || 6
-    const res = await axios.get(`${ryukodev}/pinterest?search=${encodeURIComponent(keySearchs)}`);
+    const res = await axios.get(`${rebeldev}/pinterest?search=${encodeURIComponent(keySearchs)}`);
     const data = res.data.data;
     var num = 0;
     var imgData = [];

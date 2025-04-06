@@ -10,7 +10,7 @@ module.exports = {
   cooldowns: 5
 },
 
-start: async function({ nayan, events, Users, NAYAN }) {
+start: async function({ rebel, events, Users, REBEL }) {
   let uid;
   if (events.type === "message_reply") {
     uid = events.messageReply.senderID;

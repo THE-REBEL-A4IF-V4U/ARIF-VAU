@@ -22,7 +22,7 @@ const loadCommand = function ({ moduleList, threadID, messageID, getText }) {
     const { writeFileSync, unlinkSync, readFileSync } = global.nodemodule['fs-extra'];
     const { join } = global.nodemodule['path'];
     const { configPath, mainPath, api } = global.client;
-    const logger = require(mainPath + '/ryukoc.js');
+    const logger = require(mainPath + '/rebelc.js');
 
     var errorList = [];
     delete require['resolve'][require['resolve'](configPath)];

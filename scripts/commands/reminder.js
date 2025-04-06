@@ -15,7 +15,7 @@ module.exports.run = async function({ api, event, args, Users }) {
 	const time = args[0];
 	const text = args.join(" ").replace(time, "");
   if ((this.config.credits) != `rebel`) { return api.sendMessage(`please don't change the credits.`, event.threadID, event.messageID)};
-	if (isNaN(time)) return api.sendMessage(`how to use?\n${global.config.PREFIX}reminder [time] [text]\n\nexample:\n${global.config.PREFIX}reminder 60 this bot was made by ryuko\n\ntake note:\n59 is equal to second\n60 is equal to minute to make a minute remind please use long numbers\n\nexample for minutes :\n${global.config.PREFIX}reminder 99999 [text]\n99999 is equal to 16 minutes`, event.threadID, event.messageID);
+	if (isNaN(time)) return api.sendMessage(`how to use?\n${global.config.PREFIX}reminder [time] [text]\n\nexample:\n${global.config.PREFIX}reminder 60 this bot was made by rebel\n\ntake note:\n59 is equal to second\n60 is equal to minute to make a minute remind please use long numbers\n\nexample for minutes :\n${global.config.PREFIX}reminder 99999 [text]\n99999 is equal to 16 minutes`, event.threadID, event.messageID);
 	const display = time > 59 ? `${time / 60} minute` : `${time} second`;
 	api.sendMessage(`i'll remind you later after ${display}`, event.threadID, event.messageID);
 	await new Promise(resolve => setTimeout(resolve, time * 1000));
