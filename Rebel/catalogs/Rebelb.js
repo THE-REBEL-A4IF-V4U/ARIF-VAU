@@ -9,7 +9,7 @@ const fs = require("fs");
 const login = require('../system/login/index.js');
 const moment = require("moment-timezone");
 const logger = require("./Rebelc.js");
-const gradient = require("gradient-string");
+const gradient = require("gradient-string")
 const process = require("process");
 const listbuiltinModules = require("module").builtinModules;
 
@@ -23,8 +23,8 @@ global.client = new Object({
   handleReply: new Array(),
   mainPath: process.cwd(),
   configPath: new String(),
-  apiryukoPath: new String(),
-  ryukoPath: new String(),
+  apirebelPath: new String(),
+  rebelPath: new String(),
   getTime: function(option) {
     switch (option) {
       case "seconds":
@@ -66,7 +66,7 @@ global.loading = require("./Rebelc.js");
 global.nodemodule = new Object();
 global.config = new Object();
 global.Rebel = new Object();
-global.apiryuko = new Object();
+global.apirebel = new Object();
 global.configModule = new Object();
 global.moduleData = new Array();
 global.language = new Object();
@@ -83,27 +83,27 @@ if (errorMessages.length > 0) {
     console.log(`${command}: ${error}`);
   });
 }
-var apiryukoValue;
+var apirebelValue;
 try {
-  global.client.apiryukoPath = join(global.client.mainPath, "../configs/api.json");
-  apiryukoValue = require(global.client.apiryukoPath);
+  global.client.apirebelPath = join(global.client.mainPath, "../configs/api.json");
+  apirebelValue = require(global.client.apirebelPath);
 } catch (e) {
   return;
 }
 try {
-  for (const apiKeys in apiryukoValue) global.apiryuko[apiKeys] = apiryukoValue[apiKeys];
+  for (const apiKeys in apirebelValue) global.apirebel[apiKeys] = apirebelValue[apiKeys];
 } catch (e) {
   return;
 }
-var ryukoValue;
+var rebelValue;
 try {
-  global.client.ryukoPath = join(global.client.mainPath, "../configs/Rebel.json");
-  ryukoValue = require(global.client.ryukoPath);
+  global.client.rebelPath = join(global.client.mainPath, "../configs/Rebel.json");
+  rebelValue = require(global.client.rebelPath);
 } catch (e) {
   return;
 }
 try {
-  for (const Keys in ryukoValue) global.Rebel[Keys] = ryukoValue[Keys];
+  for (const Keys in rebelValue) global.Rebel[Keys] = rebelValue[Keys];
 } catch (e) {
   return;
 }
@@ -158,7 +158,7 @@ global.getText = function(...args) {
 };
 try {
   var appStateFile = resolve(join(global.client.mainPath, "../../Rebelstate.json"));
-  var appState = ((process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER) && (fs.readFileSync(appStateFile, 'utf8'))[0] != "[" && ryuko.encryptSt) ? JSON.parse(global.utils.decryptState(fs.readFileSync(appStateFile, 'utf8'), (process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER))) : require(appStateFile);
+  var appState = ((process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER) && (fs.readFileSync(appStateFile, 'utf8'))[0] != "[" && rebel.encryptSt) ? JSON.parse(global.utils.decryptState(fs.readFileSync(appStateFile, 'utf8'), (process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER))) : require(appStateFile);
   logger.loader(`deployed ${chalk.blueBright('Rebelstate')} file`)
 } catch (e) {
   return logger.error(`can't read ${chalk.blueBright('Rebelstate')} file`)
@@ -187,7 +187,7 @@ function onBot({ models: botModel }) {
         const commandsPath = `../../scripts/commands`;
         const listCommand = readdirSync(commandsPath).filter(command => command.endsWith('.js') && !command.includes('example') && !global.config.disabledcmds.includes(command));
   console.clear();
-  console.log(chalk.blue(`DEPLOYING Rebel COMMANDS888\n`));
+  console.log(chalk.blue(`DEPLOYING Rebel COMMANDS\n`));
         for (const command of listCommand) {
           try {
             const module = require(`${commandsPath}/${command}`);
@@ -239,9 +239,9 @@ function onBot({ models: botModel }) {
                 global.configModule[moduleName][envConfigKey] = global.Rebel[moduleName][envConfigKey] ?? envConfig[envConfigKey];
                 global.Rebel[moduleName][envConfigKey] = global.Rebel[moduleName][envConfigKey] ?? envConfig[envConfigKey];
               }
-              var ryukoPath = require('../configs/Rebel.json');
-              ryukoPath[moduleName] = envConfig;
-              writeFileSync(global.client.ryukoPath, JSON.stringify(ryukoPath, null, 4), 'utf-8');
+              var rebelPath = require('../configs/Rebel.json');
+              rebelPath[moduleName] = envConfig;
+              writeFileSync(global.client.rebelPath, JSON.stringify(rebelPath, null, 4), 'utf-8');
             }
 
 
@@ -315,8 +315,8 @@ function onBot({ models: botModel }) {
               for (const evt in config.envConfig) {
                 configModule[evt] = configData[evt] = config.envConfig[evt] || '';
               }
-              writeFileSync(global.client.ryukoPath, JSON.stringify({
-                ...require(global.client.ryukoPath),
+              writeFileSync(global.client.rebelPath, JSON.stringify({
+                ...require(global.client.rebelPath),
                 [config.name]: config.envConfig
               }, null, 2));
             }
