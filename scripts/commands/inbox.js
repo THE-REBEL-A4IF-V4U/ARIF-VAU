@@ -28,6 +28,7 @@ module.exports.run = async function ({ api, event, Users, args }) {
     const gifPath = __dirname + "/inbox_gif.gif";
     const response = await axios({ url: gifUrl, responseType: "stream" });
 
+    // ✅ স্ট্রিম ডাউনলোড শুরু
     const writer = fs.createWriteStream(gifPath);
     response.data.pipe(writer);
 
@@ -53,12 +54,16 @@ module.exports.run = async function ({ api, event, Users, args }) {
 
     // ✅ ইনবক্সে GIF পাঠানো
     api.sendMessage(messageData, userID, (err) => {
-      fs.unlinkSync(gifPath); // ✅ ফাইল মুছে ফেলা হবে
       if (err) {
         api.sendMessage(
           "❌ আমি সবার ইনবক্সে যাই না! ভাবছিলাম তোর ইনবক্সে যাব, কিন্তু তোর ভিতরে সমস্যা আছে, তাই যামু না।",
           event.threadID
         );
+      } else {
+        // ✅ GIF পাঠানোর পর ফাইল মুছে ফেলা হবে
+        fs.unlink(gifPath, (err) => {
+          if (err) console.error("Error deleting the gif file:", err);
+        });
       }
     });
 
