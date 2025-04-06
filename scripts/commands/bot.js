@@ -19,7 +19,7 @@ module.exports.handleEvent = async function ({ api, event, Users }) {
   var rand = tl[Math.floor(Math.random() * tl.length)];
   let rebel = event.body?event.body.toLowerCase() : '';
 
-  if (rebel.includes("bot") || rebel.includes("Bot") || rebel.includes("বট") || rebel.includes("rebel") || rebel.includes("Rebel") || rebel.includes("রেবেল")) {
+  if (rebel.includes("bot") || rebel.includes("Bot") || rebel.includes("বট") || rebel.includes("BOt") || rebel.includes("BOT") || rebel.includes("BoT")) {
     api.setMessageReaction("😍", event.messageID, (err) => {}, true);
   //  api.sendTypingIndicator(event.threadID, true);
 
