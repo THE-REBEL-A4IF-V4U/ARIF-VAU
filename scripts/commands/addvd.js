@@ -1,22 +1,23 @@
 module.exports.config = {
   name: "add",
-  version: "1.0.0", 
+  version: "1.0.0",
   permission: 0,
   prefix: true,
   credits: "farhan",
   description: "Upload an image or video with a tag and description.",
-  category: "media", 
-  usages: "[tag] [description] [image/video]", 
+  category: "media",
+  usages: "[tag] [description] [image/video]",
   cooldowns: 0,
 };
 
 module.exports.run = async ({ api, event, args }) => {
   const axios = require('axios');
   const fs = require('fs');
+  const FormData = require('form-data');
 
-  const tag = args[0];  // Tag for categorizing media (e.g., romantic, funny, etc.)
-  const description = args[1];  // Description for the media
-  const mediaUrl = event.messageReply.attachments && event.messageReply.attachments[0].url;  // Get URL from the media attachment
+  const tag = args[0]; // Tag for categorizing media (e.g., romantic, funny, etc.)
+  const description = args[1]; // Description for the media
+  const mediaUrl = event.messageReply.attachments && event.messageReply.attachments[0].url; // Get URL from the media attachment
 
   // If media (image/video) is not provided or tag/description is missing, return error
   if (!mediaUrl || !tag || !description) {
@@ -34,20 +35,20 @@ module.exports.run = async ({ api, event, args }) => {
   }
 
   try {
-    // Send the media to the API for uploading
-    const mediaData = {
-      tag: tag,
-      text: description,
-    };
+    // Download the media (image/video) file from the provided URL
+    const mediaResponse = await axios.get(mediaUrl, { responseType: 'stream' });
+
+    // Prepare FormData for the upload
+    const formData = new FormData();
+    formData.append("file", mediaResponse.data, { filename: 'mediafile' });
+    formData.append("tag", tag);
+    formData.append("description", description);
 
     // Upload the media via the API
-    const formData = new FormData();
-    formData.append("file", mediaUrl);
     const response = await axios.post('https://rebel-api-server.onrender.com/api/media/add', formData, {
       headers: {
         ...formData.getHeaders(),
       },
-      params: mediaData,
     });
 
     // If successful, send the media link to the user
