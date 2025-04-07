@@ -14,7 +14,6 @@ const axios = require('axios');
 module.exports.onLoad = function () {
     const { writeFileSync, existsSync } = global.nodemodule["fs-extra"];
     const { resolve } = global.nodemodule["path"];
-    const log = require('../../Rebel/catalogs/Rebelc.js');
     const path = resolve(__dirname, 'system', 'system.json');
 
     if (!existsSync(path)) {
@@ -27,26 +26,39 @@ module.exports.onLoad = function () {
     }
 };
 
-module.exports.handleEvent = async ({ api, event, args, Threads }) => {
-    const { threadID, messageID } = event;
+module.exports.handleEvent = async ({ api, event }) => {
+    const { threadID, messageID, type, body, messageReply, senderID } = event;
     const { resolve } = global.nodemodule["path"];
     const path = resolve(__dirname, '../commands', 'system', 'system.json');
     const { rebel } = global.apirebel;
     const { rebel: rebelStatus } = require(path);
 
-    if (rebelStatus?.[threadID] === true) {
-        if (event.senderID !== api.getCurrentUserID()) {
-            try {
-                const res = await axios.get(encodeURI(`${rebel}${event.body}`));
-                const reply = res.data.reply;
-                if (!reply || reply === "null" || reply.toLowerCase().includes("teach me")) {
-                    api.sendMessage("i didn't understand you, teach me.", threadID, messageID);
-                } else {
-                    api.sendMessage(reply, threadID, messageID);
-                }
-            } catch (err) {
-                api.sendMessage("error fetching response.", threadID, messageID);
+    if (rebelStatus?.[threadID] !== true) return;
+    if (senderID === api.getCurrentUserID()) return;
+
+    let messageText = "";
+
+    if (type === "message" || type === "message_reply") {
+        if (messageReply && messageReply.senderID === api.getCurrentUserID()) {
+            // User is replying to bot's message
+            messageText = body?.trim();
+        } else if (type === "message") {
+            messageText = body?.trim();
+        }
+
+        if (!messageText) return;
+
+        try {
+            const res = await axios.get(encodeURI(`${rebel}${messageText}`));
+            const reply = res.data.reply;
+
+            if (!reply || reply === "null" || reply.toLowerCase().includes("teach me")) {
+                api.sendMessage("i didn't understand you, teach me.", threadID, messageID);
+            } else {
+                api.sendMessage(reply, threadID, messageID);
             }
+        } catch (err) {
+            api.sendMessage("error fetching response.", threadID, messageID);
         }
     }
 };
