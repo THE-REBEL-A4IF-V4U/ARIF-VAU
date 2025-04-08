@@ -40,7 +40,7 @@ module.exports = function({ api, models, Users, Threads, Currencies }) {
             await new Promise(resolve => setTimeout(resolve, 5 * 1000));
             return api.unsendMessage(info.messageID);
           }, messageID);
-      }
+      
     }
     const premium = global.config.premium;
     const premiumlists = global.premium.PREMIUMUSERS;
