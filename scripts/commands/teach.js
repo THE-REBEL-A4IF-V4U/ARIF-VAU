@@ -1,11 +1,8 @@
-const fs = require('fs');
-const axios = require('axios');
-
 module.exports.config = {
     name: "teach",
     version: "1.0.2",
     permission: 0,
-    credits: "rebel",
+    credits: "ryuko",
     prefix: false,
     description: "talk teach",
     category: "without prefix",
@@ -13,75 +10,29 @@ module.exports.config = {
     cooldowns: 0
 };
 
+const axios = require('axios');
+
 module.exports.run = async ({ api, event, args }) => {
-    const { messageID, threadID } = event;
-    const input = args.join(" ");
-    const separator = input.indexOf(" - ");
-    const { rebelteach } = global.apirebel;
-
-    // Check for correct format
-    if (separator === -1) {
-        return api.sendMessage(`Wrong format.\nTry: ${global.config.PREFIX}${this.config.name} your question - your answer`, threadID, messageID);
-    }
-
-    const ask = input.slice(0, separator).trim();
-    const answer = input.slice(separator + 3).trim();
-
-    if (!ask || !answer) {
-        return api.sendMessage("Please provide both question and answer in the correct format.", threadID, messageID);
-    }
-
-    try {
-        // Save question-answer pair to rebel.json (or any storage you prefer)
-        const dataFile = './data/rebel.json';
-        let data = {};
-        
-        if (fs.existsSync(dataFile)) {
-            data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
-        }
-
-        // Add the new Q&A pair
-        data[ask] = answer;
-        fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
-
-        // Teach the bot by sending the data to the API
-        const url = `${rebelteach}${encodeURIComponent(ask)}=${encodeURIComponent(answer)}`;
-        const res = await axios.get(url);
-
-        const reply = res.data.reply;
-        if (reply === "key and value have all cmnr, add the cc") {
-            return api.sendMessage("⚠️ This question and answer already exist.", threadID, messageID);
-        } else if (reply === "there's something wrong with cc, i don't know") {
-            return api.sendMessage("❌ Unknown error occurred while teaching.", threadID, messageID);
-        } else {
-            return api.sendMessage("✅ Successfully learned your input!", threadID, messageID);
-        }
-    } catch (err) {
-        return api.sendMessage("❌ Failed to connect to Rebel API.", threadID, messageID);
-    }
-};
-
-// Function to handle questions asked by users
-module.exports.answerQuestion = async ({ api, event }) => {
-    const { threadID, messageID } = event;
-    const userQuestion = event.body.toLowerCase().trim();  // Convert to lowercase for easier matching
-
-    try {
-        // Load the Q&A data
-        const dataFile = './data/rebel.json';
-        if (fs.existsSync(dataFile)) {
-            const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
-
-            // Check if the question exists
-            if (data[userQuestion]) {
-                return api.sendMessage(data[userQuestion], threadID, messageID);  // Send the answer
-            } else {
-                return api.sendMessage("❓ I don't know the answer to that question. Please teach me.", threadID, messageID);
+    let { messageID, threadID } = event;
+    let work = args.join(" ");
+    let fw = work.indexOf(" - ");
+    let { teach } = global.apirebel;
+    if (fw == -1) {
+        api.sendMessage(`wrong format\ntry : ${global.config.PREFIX}${this.config.name} (your ask) - (my answer)`,threadID,messageID);
+    } else {
+        let ask = work.slice(0, fw);
+        let answer = work.slice(fw + 3, work.length);
+        if (ask=="") {api.sendMessage("wrong format",threadID,messageID)} else {
+            if (!answer) {api.sendMessage("wrong format",threadID,messageID)} else {
+                    axios.get(encodeURI(`${teach}${ask}&&${answer}`)).then(res => {
+                        if (res.data.reply == "key and value have all cmnr, add the cc"){
+                            api.sendMessage("question, answer already exists",threadID,messageID)} else {
+                                if (res.data.reply == "there's something wrong with cc, i don't know") {api.sendMessage('unknown error.',threadID,messageID)} else {
+                                    api.sendMessage(res.data.reply,threadID,messageID);
+                                }
+                            }
+                    })
             }
-        } else {
-            return api.sendMessage("❓ I don't know the answer to that question. Please teach me.", threadID, messageID);
         }
-    } catch (err) {
-        return api.sendMessage("❌ Error occurred while retrieving the answer.", threadID, messageID);
     }
-};
+}
