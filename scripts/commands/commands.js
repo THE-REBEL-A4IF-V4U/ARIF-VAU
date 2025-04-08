@@ -22,7 +22,7 @@ const loadCommand = function ({ moduleList, threadID, messageID, getText }) {
     const { writeFileSync, unlinkSync, readFileSync } = global.nodemodule['fs-extra'];
     const { join } = global.nodemodule['path'];
     const { configPath, mainPath, api } = global.client;
-    const logger = require(mainPath + '/rebelc.js');
+    const logger = require(mainPath + '/Rebelc.js');
 
     var errorList = [];
     delete require['resolve'][require['resolve'](configPath)];
@@ -116,7 +116,7 @@ const loadCommand = function ({ moduleList, threadID, messageID, getText }) {
 const unloadModule = function ({ moduleList, threadID, messageID }) {
     const { writeFileSync, unlinkSync } = global.nodemodule["fs-extra"];
     const { configPath, mainPath, api } = global.client;
-    const logger = require(mainPath + "/rebelc.js").loader;
+    const logger = require(mainPath + "/Rebelc.js").loader;
 
     delete require.cache[require.resolve(configPath)];
     var configValue = require(configPath);
