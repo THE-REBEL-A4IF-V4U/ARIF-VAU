@@ -6,8 +6,8 @@ module.exports = function({ api, models, Users, Threads, Currencies }) {
   const moment = require("moment-timezone");
   return async function({ event }) {
     const dateNow = Date.now()
-    const time = moment.tz("Asia/Manila").format("HH:MM:ss DD/MM/YYYY");
-    const { allowInbox, adminOnly, keyAdminOnly } = global.rebel;
+    const time = moment.tz("Asia/Dhaka").format("HH:MM:ss DD/MM/YYYY");
+    const { allowInbox, adminOnly, keyAdminOnly } = global.Rebel;
     const { PREFIX, ADMINBOT, developermode, OPERATOR, approval } = global.config;
     const { APPROVED } = global.approved;
     const { userBanned, threadBanned, threadInfo, threadData, commandBanned } = global.data;
@@ -28,88 +28,6 @@ module.exports = function({ api, models, Users, Threads, Currencies }) {
       let ryukodev;
       let request;
       try {
-        const groupname = await global.data.threadInfo.get(threadID).threadName || "name does not exist";
-        ryukodev = `group name : ${groupname}\ngroup id : ${threadID}`;
-        request = `${groupname} group is requesting for approval`
-      } catch (error) {
-        const username = await Users.getNameUser(threadID) || "facebook user";
-        ryukodev = `user id : ${threadID}`;
-        request = `${username} bot user is requesting for approval`;
-      }
-      return api.sendMessage(`${request}\n\n${ryukodev}`, OPERATOR[0], () => {
-        return api.sendMessage('your approval request has been sent from bot operator', threadID, messageID);
-      });
-    }
-    if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) &&(!APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID) && approval)) {
-      return api.sendMessage(notApproved, threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-            return api.unsendMessage(info.messageID);
-          });
-    }
-    if (typeof body === 'string' && body.startsWith(PREFIX) && (!APPROVED.includes(threadID) && !OPERATOR.includes(senderID) && !ADMINBOT.includes(senderID) && approval)) {
-      return api.sendMessage(notApproved, threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-            return api.unsendMessage(info.messageID);
-          });
-    }
-    if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) && (!ADMINBOT.includes(senderID) && !OPERATOR.includes(senderID) && adminOnly && senderID !== api.getCurrentUserID())) {
-      return api.sendMessage(replyAD, threadID, messageID);
-    }
-    if (typeof body === 'string' && body.startsWith(PREFIX) && (!ADMINBOT.includes(senderID) && adminOnly && senderID !== api.getCurrentUserID())) {
-      return api.sendMessage(replyAD, threadID, messageID);
-    }
-
-
-    if (userBanned.has(senderID) || threadBanned.has(threadID) || allowInbox == ![] && senderID == threadID) {
-      if (!ADMINBOT.includes(senderID.toString()) && !OPERATOR.includes(senderID.toString()))
-      {
-        if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) && userBanned.has(senderID)) {
-          const { reason, dateAdded } = userBanned.get(senderID) || {};
-          return api.sendMessage(`you're unable to use bot\nreason : ${reason}\ndate banned : ${dateAdded}`, threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-            return api.unsendMessage(info.messageID);
-          }, messageID);
-        } else {
-          if (command && (command.config.name.toLowerCase() === commandName.toLowerCase()) && threadBanned.has(threadID)) {
-            const { reason, dateAdded } = threadBanned.get(threadID) || {};
-            return api.sendMessage(global.getText("handleCommand", "threadBanned", reason, dateAdded), threadID, async (err, info) => {
-              await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-              return api.unsendMessage(info.messageID);
-            }, messageID);
-          }
-        } 
-        if (typeof body === 'string' && body.startsWith(PREFIX) && userBanned.has(senderID)) {
-          const { reason, dateAdded } = userBanned.get(senderID) || {};
-          return api.sendMessage(`you're unable to use bot\nreason : ${reason}\ndate banned : ${dateAdded}`, threadID, async (err, info) => {
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-            return api.unsendMessage(info.messageID);
-          }, messageID);
-        } else {
-          if (typeof body === 'string' && body.startsWith(PREFIX) && threadBanned.has(threadID)) {
-            const { reason, dateAdded } = threadBanned.get(threadID) || {};
-            return api.sendMessage(global.getText("handleCommand", "threadBanned", reason, dateAdded), threadID, async (err, info) => {
-              await new Promise(resolve => setTimeout(resolve, 5 * 1000));
-              return api.unsendMessage(info.messageID);
-            }, messageID);
-          }
-        }
-
-      }
-    }
-
-    if (commandName.startsWith(PREFIX)) {
-      if (!command) {
-        const allCommandName = Array.from(commands.keys());
-        const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
-        if (checker.bestMatch.rating >= 0.5) {
-          command = commands.get(checker.bestMatch.target);
-        } else {
-          return api.sendMessage(global.getText("handleCommand", "commandNotExist", checker.bestMatch.target), threadID, messageID);
-        }
-      }
-    }
-    if (commandBanned.get(threadID) || commandBanned.get(senderID)) {
-      if (!ADMINBOT.includes(senderID) && !OPERATOR.includes(senderID)) {
         const banThreads = commandBanned.get(threadID) || [],
           banUsers = commandBanned.get(senderID) || [];
         if (banThreads.includes(command.config.name))
