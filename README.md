@@ -7,7 +7,7 @@ link : [facebook](https://www.facebook.com/profile.php?id=100000959749712).</br>
 ## CREDITS
 
 original file : [BotPack](https://replit.com/@YanMaglinte/BotPack?v=1) by ```YanMaglinte```</br>
-modified : [Rebel](https://replit.com/@itsmetherebelmi/REBEL?v=1) by ```Rebel Developer```
+modified : [Rebel](https://replit.com/@itsmetherebelmi/ARIF-VAU?v=1) by ```Rebel Developer```
 
 
 ## CONFIG AND CUSTOM
