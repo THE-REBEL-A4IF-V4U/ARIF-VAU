@@ -1,9 +1,8 @@
-const fs = require('fs');
 const axios = require('axios');
 
 module.exports.config = {
     name: "teach",
-    version: "1.0.2",
+    version: "1.0.3",
     permission: 0,
     credits: "rebel",
     prefix: false,
@@ -36,61 +35,25 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     try {
-        const dataFile = './data/rebel.json';
-        let data = {};
-
-        if (fs.existsSync(dataFile)) {
-            data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
-        }
-
-        if (!data[ask]) {
-            data[ask] = [];
-        }
-
-        if (!data[ask].includes(answer)) {
-            data[ask].push(answer);
-            fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
-        }
-
         const url = `${rebelteach}${encodeURIComponent(`${ask}=${answer}`)}`;
         const res = await axios.get(url);
+        const result = res.data;
 
-        const reply = res.data.reply;
-
-        if (reply === "key and value have all cmnr, add the cc") {
-            return api.sendMessage("⚠️ This question and answer already exist.", threadID, messageID);
-        } else if (reply === "there's something wrong with cc, i don't know") {
-            return api.sendMessage("❌ Unknown error occurred while teaching.", threadID, messageID);
+        if (result.success) {
+            return api.sendMessage(
+                `✅ ${result.message}\nPreview: ${result.previewAsk}`,
+                threadID,
+                messageID
+            );
         } else {
-            return api.sendMessage("✅ Successfully learned your input!", threadID, messageID);
+            return api.sendMessage(
+                `❌ Failed: ${result.message || "Unknown error"}`,
+                threadID,
+                messageID
+            );
         }
     } catch (err) {
         console.error(err);
         return api.sendMessage("❌ Failed to connect to Rebel API.", threadID, messageID);
-    }
-};
-
-module.exports.answerQuestion = async ({ api, event }) => {
-    const { threadID, messageID } = event;
-    const userQuestion = event.body.toLowerCase().trim();
-
-    try {
-        const dataFile = './data/rebel.json';
-        if (!fs.existsSync(dataFile)) {
-            return api.sendMessage("❓ I don't know the answer to that question. Please teach me.", threadID, messageID);
-        }
-
-        const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
-
-        if (data[userQuestion]) {
-            const answers = data[userQuestion];
-            const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
-            return api.sendMessage(randomAnswer, threadID, messageID);
-        } else {
-            return api.sendMessage("❓ I don't know the answer to that question. Please teach me.", threadID, messageID);
-        }
-    } catch (err) {
-        console.error(err);
-        return api.sendMessage("❌ Error occurred while retrieving the answer.", threadID, messageID);
     }
 };
