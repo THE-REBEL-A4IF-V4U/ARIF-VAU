@@ -1,8 +1,8 @@
 module.exports.config = {
-	name: "groupsall",
+	name: "group",
 	version: "0.0.3",
 	permission: 2,
-	credits: "ryuko",
+	credits: "rebel",
 	prefix: true,
 	description: "ban or unblock a group",
 	category: "admin",
