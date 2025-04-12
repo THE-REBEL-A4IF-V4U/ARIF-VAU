@@ -10,7 +10,6 @@ const process = require("process");
 const listbuiltinModules = require("module").builtinModules;
 const login = require('../system/login/index.js');
 const logger = require("./Rebelc.js");
-const { Sequelize, sequelize } = require("../system/database/index.js");
 
 // GLOBAL CRASH PROTECTION
 process.on("unhandledRejection", (reason, p) => {
@@ -36,15 +35,9 @@ global.client = {
   getTime(option) {
     const now = moment.tz("Asia/Dhaka");
     const formats = {
-      seconds: "ss",
-      minutes: "mm",
-      hours: "HH",
-      date: "DD",
-      month: "MM",
-      year: "YYYY",
-      fullHour: "HH:mm:ss",
-      fullYear: "DD/MM/YYYY",
-      fullTime: "HH:mm:ss DD/MM/YYYY"
+      seconds: "ss", minutes: "mm", hours: "HH", date: "DD",
+      month: "MM", year: "YYYY", fullHour: "HH:mm:ss",
+      fullYear: "DD/MM/YYYY", fullTime: "HH:mm:ss DD/MM/YYYY"
     };
     return now.format(formats[option] || formats.fullTime);
   },
@@ -77,6 +70,7 @@ global.account = {};
 
 const crayon = gradient('yellow', 'lime', 'green');
 
+// Safe wrappers
 function safeRequire(path, name = "") {
   try {
     return require(path);
@@ -95,10 +89,23 @@ function safeReadFileSync(path, name = "") {
   }
 }
 
+// Load config
 const configPath = join(process.cwd(), '../../Rebel.json');
 const configValue = safeRequire(configPath, 'Rebel.json');
 if (configValue) Object.assign(global.config, configValue);
 
+// Load Rebel.json before using database
+const rebelPath = join(global.client.mainPath, "../configs/Rebel.json");
+const rebelValue = safeRequire(rebelPath, 'Rebel.json');
+if (rebelValue) Object.assign(global.Rebel, rebelValue);
+
+// Now load database (after Rebel is loaded)
+const { Sequelize, sequelize } = require("../system/database/index.js");
+
+global.client.rebelPath = rebelPath;
+global.client.configPath = configPath;
+
+// Load language
 const langPath = `${__dirname}/languages/${global.config.language || "en"}.lang`;
 const langRaw = safeReadFileSync(langPath, 'language file');
 if (langRaw) {
@@ -116,21 +123,17 @@ global.getText = function (...args) {
   const [section, key, ...replacements] = args;
   const base = global.language[section]?.[key];
   if (!base) return `Missing text: ${section}.${key}`;
-  return replacements.reduce((text, val, i) => text.replace(new RegExp(`%${i + 1}`, 'g'), val), base);
+  return replacements.reduce((text, val, i) =>
+    text.replace(new RegExp(`%${i + 1}`, 'g'), val), base);
 };
 
+// Load api.json
 const apirebelPath = join(global.client.mainPath, "../configs/api.json");
 const apirebelValue = safeRequire(apirebelPath, 'api.json');
 if (apirebelValue) Object.assign(global.apirebel, apirebelValue);
-
-const rebelPath = join(global.client.mainPath, "../configs/Rebel.json");
-const rebelValue = safeRequire(rebelPath, 'Rebel.json');
-if (rebelValue) Object.assign(global.Rebel, rebelValue);
-
-global.client.rebelPath = rebelPath;
-global.client.configPath = configPath;
 global.client.apirebelPath = apirebelPath;
 
+// Load local node modules
 try {
   for (const property in listPackage) {
     try {
@@ -141,6 +144,7 @@ try {
   logger.error("Couldn't load local packages");
 }
 
+// Load Rebelstate.json
 let appStateFile = resolve(join(global.client.mainPath, "../../Rebelstate.json"));
 let appState = null;
 try {
@@ -148,11 +152,12 @@ try {
   appState = (fileData[0] !== "[" && global.Rebel.encryptSt)
     ? JSON.parse(global.utils.decryptState(fileData, process.env.REPL_OWNER || process.env.PROCESSOR_IDENTIFIER))
     : JSON.parse(fileData);
-  logger.loader(`deployed ${chalk.blueBright('Rebelstate')} file`);
+  logger.loader(`Deployed ${chalk.blueBright('Rebelstate')} file`);
 } catch (e) {
-  logger.error(`can't read Rebelstate.json: ${e.message}`);
+  logger.error(`Can't read Rebelstate.json: ${e.message}`);
 }
 
+// Login and start bot
 function onBot({ models }) {
   login({ appState }, async (err, api) => {
     if (err) return logger.error("Login error:", err.message);
@@ -160,9 +165,6 @@ function onBot({ models }) {
     global.client.api = api;
     global.Rebel.version = config.version;
     global.custom = require('../../Rebel.js')({ api });
-
-    // Deploy commands & events like in your original structure
-    // ...
 
     const listener = require('../system/listen.js')({ api, models });
     global.handleListen = api.listenMqtt((error, message) => {
@@ -174,15 +176,15 @@ function onBot({ models }) {
         listener(message);
       }
     });
-
   });
 }
 
+// Database connection
 (async () => {
   try {
     await sequelize.authenticate();
     const models = require('../system/database/model.js')({ Sequelize, sequelize });
-    logger("Database connected", "[Rebel]");
+    logger(`Database connected`, "[Rebel]");
     onBot({ models });
   } catch (err) {
     logger.error("Database connection failed:", err.message);
