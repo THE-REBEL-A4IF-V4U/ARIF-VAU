@@ -1400,6 +1400,7 @@ module.exports = {
   generateOfflineThreadingID,
   getGUID,
   getFrom,
+  getFroms: getFrom, // <-- এই লাইনটা যোগ করো
   makeParsable,
   arrToForm,
   getSignatureID,
