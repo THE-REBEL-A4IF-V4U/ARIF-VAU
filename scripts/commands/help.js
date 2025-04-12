@@ -2,7 +2,7 @@ module.exports.config = {
   name: "help",
   version: "1.0.2",
   permission: 0,
-  credits: "ryuko",
+  credits: "REBEL",
   description: "beginner's guide",
   prefix: true,
   category: "guide",
@@ -26,7 +26,6 @@ module.exports.languages = {
   },
 };
 
-
 module.exports.handleEvent = function ({ api, event, getText }) {
   const { commands } = global.client;
   const { threadID, messageID, body } = event;  
@@ -34,7 +33,7 @@ module.exports.handleEvent = function ({ api, event, getText }) {
   if (!body || typeof body == "undefined" || body.indexOf("help") != 0)
     return;
   const splitBody = body.slice(body.indexOf("help")).trim().split(/\s+/);
-  if (splitBody.length == 1 || !commands.has(splitBody[1].toLowerCase())) return;
+  if (splitBody.length == 1 || !commands.has(splitBody[1].toLowerCase()])) return;
   const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};
   const command = commands.get(splitBody[1].toLowerCase());
   const prefix = threadSetting.hasOwnProperty("PREFIX")
@@ -84,11 +83,7 @@ module.exports.run = async function ({ api, event, args, getText }) {
     let currentPage = 1;
     if (args[0]) {
       const parsedPage = parseInt(args[0]);
-      if (
-        !isNaN(parsedPage) &&
-        parsedPage >= 1 &&
-        parsedPage <= totalPages
-      ) {
+      if (!isNaN(parsedPage) && parsedPage >= 1 && parsedPage <= totalPages) {
         currentPage = parsedPage;
       } else {
         return api.sendMessage(
@@ -98,6 +93,7 @@ module.exports.run = async function ({ api, event, args, getText }) {
         );
       }
     }
+
     const startIdx = (currentPage - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
     const visibleCategories = categoryNames.slice(startIdx, endIdx);
@@ -106,82 +102,53 @@ module.exports.run = async function ({ api, event, args, getText }) {
     for (let i = 0; i < visibleCategories.length; i++) {
       const category = visibleCategories[i];
       const categoryCommands = commandList.filter(
-        (cmd) =>
-          cmd.config.category.toLowerCase() === category
+        (cmd) => cmd.config.category.toLowerCase() === category
       );
       const commandNames = categoryCommands.map((cmd) => cmd.config.name);
-      const numberFont = [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-      ];
-      msg += `${
-        category.charAt(0).toLowerCase() + category.slice(1)
-      } category :\n\n${commandNames.join("\n")}\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n`;
+      msg += `${category.charAt(0).toLowerCase() + category.slice(1)} category :\n\n${commandNames.join("\n")}\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n`;
     }
+
     const numberFontPage = [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "10",
-      "11",
-      "12",
-      "13",
-      "14",
-      "15",
-      "16",
-      "17",
-      "18",
-      "19",
-      "20",
+      "1","2","3","4","5","6","7","8","9","10",
+      "11","12","13","14","15","16","17","18","19","20"
     ];
-    msg += `page ${numberFontPage[currentPage - 1]} of ${
-      numberFontPage[totalPages - 1]
-    }\n\n`;
+    msg += `page ${numberFontPage[currentPage - 1]} of ${numberFontPage[totalPages - 1]}\n\n`;
     msg += getText("helpList", commands.size, categoryCount, prefix);
 
     const axios = require("axios");
     const fs = require("fs-extra");
-    const imgP = [];
-    const img = [ "https://i.imgur.com/ruQ2pRn.jpg",
+    const img = [
+      "https://i.imgur.com/ruQ2pRn.jpg",
       "https://i.imgur.com/HXHb0cB.jpg",
       "https://i.imgur.com/ZJEI6KW.jpg",
       "https://i.imgur.com/XGL57Wp.jpg",
       "https://i.imgur.com/6OB00HJ.jpg",
       "https://i.imgur.com/6vHaRZm.jpg",
-      "https://i.imgur.com/k6uE93k.jpg" ];
+      "https://i.imgur.com/k6uE93k.jpg"
+    ];
     const path = __dirname + "/cache/menu.png";
     const rdimg = img[Math.floor(Math.random() * img.length)];
 
-    const { data } = await axios.get(rdimg, {
-      responseType: "arraybuffer",
-    });
+    try {
+      const { data } = await axios.get(rdimg, { responseType: "arraybuffer" });
+      fs.writeFileSync(path, data); // fixed buffer writing
 
-    fs.writeFileSync(path, Buffer.from(data, "utf-8"));
-    imgP.push(fs.createReadStream(path));
-    const msgg = {
-  body: `existing commands and categories\n\nhere's the categories and commands of ${global.config.BOTNAME} ai ;\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n` + msg + `\n\n`
-    };
+      const msgg = {
+        body: `existing commands and categories\n\nhere's the categories and commands of ${global.config.BOTNAME} ai ;\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n` + msg,
+        attachment: fs.createReadStream(path)
+      };
 
-    const sentMessage = await api.sendMessage(msgg, threadID, async (error, info) => {
-      if (autoUnsend) {
-        await new Promise(resolve => setTimeout(resolve, delayUnsend * 500));
-        return api.unsendMessage(info.messageID);
-      } else return;
-    }, messageID);
+      await api.sendMessage(msgg, threadID, async (error, info) => {
+        if (autoUnsend) {
+          await new Promise(resolve => setTimeout(resolve, delayUnsend * 1000));
+          return api.unsendMessage(info.messageID);
+        }
+      }, messageID);
+    } catch (error) {
+      console.error("Failed to fetch/send help image:", error.message);
+      api.sendMessage("Help command failed to load image. Showing commands only:\n\n" + msg, threadID, messageID);
+    }
+
   } else {
     return api.sendMessage(
       getText(
@@ -201,10 +168,11 @@ module.exports.run = async function ({ api, event, args, getText }) {
         command.config.credits
       ),
       threadID, async (error, info) => {
-      if (autoUnsend) {
-        await new Promise(resolve => setTimeout(resolve, delayUnsend * 500));
-        return api.unsendMessage(info.messageID);
-      } else return;
-    }, messageID);
+        if (autoUnsend) {
+          await new Promise(resolve => setTimeout(resolve, delayUnsend * 1000));
+          return api.unsendMessage(info.messageID);
+        }
+      }, messageID
+    );
   }
-}; 
+};
