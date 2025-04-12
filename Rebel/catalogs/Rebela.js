@@ -3,13 +3,20 @@ const { spawn } = require("child_process");
 const chalk = require("chalk");
 const path = require("path");
 const express = require("express");
+const fs = require("fs");
 const app = express();
 const logger = require("./Rebelc.js");
 
 const PORT = process.env.PORT || 8080;
+let botProcess = null;
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../website/Rebel.html"));
+  const filePath = path.join(__dirname, "../website/Rebel.html");
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.send("<h1>Website is coming soon. Rebel.html not found.</h1>");
+  }
 });
 
 function startBot() {
@@ -20,19 +27,27 @@ function startBot() {
     logger.loader(`Website served on port ${chalk.blueBright(PORT)}`);
   });
 
-  const child = spawn("node", ["Rebelb.js"], {
+  runBot();
+}
+
+function runBot() {
+  botProcess = spawn("node", ["Rebelb.js"], {
     cwd: __dirname,
     stdio: "inherit",
     shell: true,
   });
 
-  child.on("close", (code) => {
+  botProcess.on("close", (code) => {
+    logger("Bot exited with code " + code, "warn");
     if (code !== 0) {
-      logger("Bot exited with code " + code, "warn");
+      logger("Restarting bot in 5 seconds...", "rebel");
+      setTimeout(() => {
+        runBot(); // restart bot
+      }, 5000);
     }
   });
 
-  child.on("error", (error) => {
+  botProcess.on("error", (error) => {
     logger("An error occurred: " + JSON.stringify(error), "error");
   });
 }
