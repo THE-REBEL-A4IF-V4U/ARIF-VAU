@@ -2,7 +2,7 @@ const axios = require("axios");
 const fs = require("fs-extra");
 
 module.exports.config = {
-  name: "group",
+  name: "groupe",
   version: "2.0.0",
   permission: 2,
   credits: "Rebel + ChatGPT Fix",
