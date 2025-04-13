@@ -2,7 +2,7 @@
 
 const Sequelize = require("sequelize");
 const { resolve } = require("path");
-const { DATABASE } = global.Rebel;
+const { DATABASE } = global.rebel;
 
 var dialect = Object.keys(DATABASE), storage;
 dialect = dialect[0]; 
