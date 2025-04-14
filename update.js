@@ -3,8 +3,15 @@ const axios = require("axios");
 const chalk = require("chalk");
 const fs = require("fs");
 const path = require("path");
+const express = require("express");
 const { spawn } = require("child_process");
-const { showBanner } = require("./banner"); // Import banner
+const { showBanner } = require("./banner");
+
+// Express app for UptimeRobot ping
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get("/", (req, res) => res.send("Bot is alive!"));
+app.listen(PORT, () => console.log(chalk.green(`✓ KeepAlive server running at http://localhost:${PORT}`)));
 
 async function fetchRemoteJSON(url) {
   try {
@@ -22,7 +29,7 @@ async function runCheckAndStartBot() {
   const remotePkg = await fetchRemoteJSON("https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/A4IFB0T/main/package.json");
   const notice = await fetchRemoteJSON("https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/A4IFB0T/main/notice.json");
 
-  // Show notice if any
+  // Show notice if available
   if (notice?.message) {
     let bannerColor = chalk.bgCyan;
     if (notice.type === "warning") bannerColor = chalk.bgYellow.black;
@@ -36,10 +43,9 @@ async function runCheckAndStartBot() {
     console.log(bannerColor(line) + "\n");
   }
 
-  // Show banner after notice
-  showBanner();
+  showBanner(); // Banner logo
 
-  // Local package.json path
+  // Check version
   const localPath = path.join(__dirname, "package.json");
   if (!fs.existsSync(localPath)) {
     console.log(chalk.red("Local package.json not found!"));
@@ -54,14 +60,13 @@ async function runCheckAndStartBot() {
 
   if (localPkg.version !== remotePkg.version) {
     console.log(chalk.red("\nBot version mismatch!"));
-    console.log(`Local Version: ${chalk.red(localPkg.version)} | Latest Version: ${chalk.green(remotePkg.version)}`);
+    console.log(`Local: ${chalk.red(localPkg.version)} | Latest: ${chalk.green(remotePkg.version)}`);
     console.log(chalk.red("Please update your bot to continue."));
     process.exit(1);
   }
 
   console.log(chalk.green("✅ Bot is up-to-date. Launching bot...\n"));
 
-  // Launch Rebela.js
   const rebelaPath = path.join(__dirname, "Rebel", "catalogs", "Rebela.js");
   const child = spawn("node", [rebelaPath], {
     stdio: "inherit",
