@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
-  const filePath = path.join(__dirname, "website/Rebel.html");
+  const filePath = path.join(__dirname, "Rebel/catalogs/website/Rebel.html");
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
