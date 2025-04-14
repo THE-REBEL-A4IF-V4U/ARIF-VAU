@@ -1,4 +1,3 @@
-// start.js
 const axios = require("axios");
 const chalk = require("chalk");
 const fs = require("fs");
@@ -7,12 +6,24 @@ const express = require("express");
 const { spawn } = require("child_process");
 const { showBanner } = require("./banner");
 
-// Express app for UptimeRobot ping
+// Express app for KeepAlive + Website
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.get("/", (req, res) => res.send("Bot is alive!"));
-app.listen(PORT, () => console.log(chalk.green(`✓ KeepAlive server running at http://localhost:${PORT}`)));
 
+app.get("/", (req, res) => {
+  const filePath = path.join(__dirname, "website/Rebel.html");
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.send("<h1>Website is coming soon. Rebel.html not found.</h1>");
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(chalk.green(`✓ Server running at http://localhost:${PORT}`));
+});
+
+// Fetch JSON utility
 async function fetchRemoteJSON(url) {
   try {
     const res = await axios.get(url);
