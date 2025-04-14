@@ -1,4 +1,3 @@
-// catalogs/Rebela.js
 const { spawn } = require("child_process");
 const chalk = require("chalk");
 const path = require("path");
@@ -9,9 +8,10 @@ const logger = require("./Rebelc.js");
 
 const PORT = process.env.PORT || 8080;
 let botProcess = null;
+let serverStarted = false;
 
 app.get("/", (req, res) => {
-  const filePath = path.join(__dirname, "../website/Rebel.html");
+  const filePath = path.join(__dirname, "./website/Rebel.html");
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
@@ -21,11 +21,16 @@ app.get("/", (req, res) => {
 
 function startBot() {
   logger("Starting REBEL Bot...", "rebel");
-  logger.loader(`App running on port ${chalk.blueBright(PORT)}`);
 
-  app.listen(PORT, () => {
-    logger.loader(`Website served on port ${chalk.blueBright(PORT)}`);
-  });
+  if (!serverStarted) {
+    app.listen(PORT, () => {
+      logger.loader(`Website served on port ${chalk.blueBright(PORT)}`);
+    });
+    serverStarted = true; // Mark as started
+    logger.loader(`App running on port ${chalk.blueBright(PORT)}`);
+  } else {
+    logger("Server already running, skipping app.listen()", "warn");
+  }
 
   runBot();
 }
@@ -42,7 +47,7 @@ function runBot() {
     if (code !== 0) {
       logger("Restarting bot in 5 seconds...", "rebel");
       setTimeout(() => {
-        runBot(); // restart bot
+        runBot();
       }, 5000);
     }
   });
