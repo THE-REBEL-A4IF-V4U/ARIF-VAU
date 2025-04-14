@@ -5,6 +5,15 @@ const logger = require("./Rebelc.js");
 
 let botProcess = null;
 
+// Global error handlers (NEWLY ADDED)
+process.on("unhandledRejection", (reason, promise) => {
+  logger("Unhandled Rejection at: " + promise + " reason: " + reason, "error");
+});
+
+process.on("uncaughtException", (err) => {
+  logger("Uncaught Exception thrown: " + err.stack, "error");
+});
+
 function startBot() {
   logger("Starting REBEL Bot...", "rebel");
   runBot();
