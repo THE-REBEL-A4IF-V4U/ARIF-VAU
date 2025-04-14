@@ -2,6 +2,7 @@
 
 var utils = require("../utils");
 var log = require("npmlog");
+var delay = require("../utils/delay"); // Delay utility added
 
 module.exports = function (defaultFuncs, api, ctx) {
   return async function markAsRead(threadID, read, callback) {
@@ -22,10 +23,10 @@ module.exports = function (defaultFuncs, api, ctx) {
       form["watermarkTimestamp"] = new Date().getTime();
       form["shouldSendReadReceipt"] = true;
       form["commerce_last_message_type"] = "";
-      //form["titanOriginatedThreadId"] = utils.generateThreadingID(ctx.clientID);
 
       let resData;
       try {
+        await delay(1500 + Math.random() * 1000); // Delay added to avoid rate limit (1.5s to 2.5s)
         resData = await (
           defaultFuncs
             .post("https://www.facebook.com/ajax/mercury/change_read_status.php", ctx.jar, form)
