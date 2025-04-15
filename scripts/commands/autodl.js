@@ -1,68 +1,61 @@
-const fs = require("fs");
-const axios = require("axios");
-const request = require("request");
+module.exports = {
+  config: {
+    name: "auto",
+    version: "0.0.2",
+    permission: 0,
+    prefix: true,
+    credits: "Nayan",
+    description: "Auto video download",
+    category: "user",
+    usages: "",
+    cooldowns: 5,
+  },
 
-module.exports.config = {
-  name: "mediadownload",
-  version: "1.0.0",
-  permission: 0,
-  credits: "TR4",
-  description: "Download media from various platforms like YouTube, Facebook, Instagram, etc.",
-  prefix: false, // Set to false for no prefix
-  category: "admin",
-  usages: "link",
-  cooldowns: 5,
-};
-
-module.exports.run = async function({ api, event, args }) {
-  api.setMessageReaction("😽", event.messageID, (err) => {}, true);
-  api.sendTypingIndicator(event.threadID, true);
-
-  const { messageID, threadID } = event;
-
-  // The URL is directly passed in the message, so we extract it from the message body
-  const content = event.body.trim(); // Get the message body
-
-  if (!content) return api.sendMessage("[ ! ] Input link.", threadID, messageID);
-
-  try {
-    // Request media info from the API
-    let response = await axios.get(`https://rebel-api-server.onrender.com/media?url=${encodeURIComponent(content)}`);
+  start: async function({ nayan, events, args }) {},
+  
+  handleEvent: async function({ api, event, args }) {
+    const axios = require("axios");
+    const request = require("request");
+    const fs = require("fs-extra");
     
-    const data = response.data;
+    const content = event.body ? event.body : '';
+    const body = content.toLowerCase();
     
-    // Check if the response contains a media link
-    if (!data || !data.media || !data.media.link) {
-      return api.sendMessage("[ ! ] Media not found or the link is invalid.", threadID, messageID);
-    }
+    // Your provided link for downloading videos
+    const apiUrl = `https://rebel-api-server.onrender.com/media?url=${encodeURIComponent(content)}`;
 
-    const mediaLink = data.media.link; // Get the download link from the API response
-    const mediaTitle = data.media.title || "Downloaded Media"; // Get the title or set default
+    if (body.startsWith("https://")) {
+      api.setMessageReaction("🔍", event.messageID, (err) => {}, true);
+      
+      try {
+        // Fetch the media data using the provided API link
+        const response = await axios.get(apiUrl);
+        const data = response.data;
 
-    // Create cache folder if not exists
-    const cacheDir = __dirname + '/cache';
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir);
-    }
+        if (!data || !data.media || !data.media.link) {
+          return api.sendMessage("[ ! ] Media not found or the link is invalid.", event.threadID, event.messageID);
+        }
 
-    // Create a writable stream for the media file
-    const filePath = cacheDir + `/media_${Date.now()}.mp4`; // Save the file with a unique name
-    const file = fs.createWriteStream(filePath);
-    
-    // Download the media file
-    const rqs = request(encodeURI(mediaLink));
-    rqs.pipe(file);
+        const { link, title } = data.media;
+        
+        // Fetch the video from the provided media link
+        const videoData = await axios.get(link, { responseType: "arraybuffer" });
+        const videoBuffer = Buffer.from(videoData.data, "utf-8");
+        
+        // Save the video file in cache
+        fs.writeFileSync(__dirname + "/cache/auto.mp4", videoBuffer);
 
-    // Send a message when download is complete
-    file.on('finish', () => {
-      setTimeout(function() {
+        // Send the video back to the user with title
+        api.setMessageReaction("✔️", event.messageID, (err) => {}, true);
+
         return api.sendMessage({
-          body: `Downloaded Successfully.\n\nTitle: ${mediaTitle}`,
-          attachment: fs.createReadStream(filePath)
-        }, threadID, messageID);
-      }, 5000);
-    });
-  } catch (err) {
-    api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);
+          body: `《TITLE》: ${title}`,
+          attachment: fs.createReadStream(__dirname + "/cache/auto.mp4")
+        }, event.threadID, event.messageID);
+
+      } catch (err) {
+        api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);
+      }
+    }
   }
 };
