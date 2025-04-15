@@ -4,68 +4,69 @@ const request = require("request");
 
 module.exports.config = {
   name: "fbvideo",
-  version: "2.0.0",
+  version: "1.0.0",
   permission: 0,
-  credits: "TR4",
-  description: "Download video from facebook",
+  credits: "Rebel Tech Zone",
+  description: "Download video from Facebook",
   prefix: true,
   category: "download",
-  usages: "link",
+  usages: "[facebook video link]",
   cooldowns: 5,
-  dependencies: {
-    'image-downloader': '',
-  }
 };
 
 module.exports.run = async function({ api, event, args }) {
-  api.setMessageReaction("😽", event.messageID, (err) => {}, true);
-  api.sendTypingIndicator(event.threadID, true);
-  
   const { messageID, threadID } = event;
+  const link = args.join(" ");
 
-  const prompt = args.join(" ");
-  if (!args[0]) return api.sendMessage("[ ! ] Input link.", threadID, messageID);
-
-  const content = args.join(" ");
-  if (!args[1]) {
-    // Show loading image
-    const loadingImageURL = 'https://drive.google.com/uc?export=download&id=1HPv0BraxhZP8RG9bLYS5wznxunyiB6x7'; // Change to your loading image URL
-    api.sendMessage({
-      body: `একটু অপেক্ষা করুন \n\nআপনার ভিডিও ডাওনলোড হচ্ছে ...`,
-      attachment: request(loadingImageURL)
-    }, event.threadID, (err, info) => {
-      const loadingMessageID = info.messageID;
-      setTimeout(() => { api.unsendMessage(loadingMessageID) }, 20000); // Remove loading image after 20 seconds
-    });
+  if (!link) {
+    return api.sendMessage("[ ! ] Facebook ভিডিও লিংক দিন।", threadID, messageID);
   }
 
+  // Show loading message
+  const loadingImage = 'https://drive.google.com/uc?export=download&id=1HPv0BraxhZP8RG9bLYS5wznxunyiB6x7';
+  api.sendMessage({
+    body: `ভিডিও ডাউনলোড হচ্ছে...\n\nঅনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন!`,
+    attachment: request(loadingImage)
+  }, threadID, (err, info) => {
+    const loadingMsgID = info.messageID;
+    setTimeout(() => api.unsendMessage(loadingMsgID), 15000);
+  });
+
   try {
-    let data = await axios.get(`https://rebel-api-server.onrender.com/facebook?url=${content}`);
-    
-    // Create cache folder if not exists
-    const cacheDir = __dirname + '/cache';
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir);
+    const response = await axios.get(`https://rebel-api-server.onrender.com/facebook?url=${encodeURIComponent(link)}`);
+    const data = response.data;
+
+    if (!data.downloads || !Array.isArray(data.downloads)) {
+      return api.sendMessage("ডাউনলোড লিংক পাওয়া যায়নি।", threadID, messageID);
     }
 
-    const filePath = cacheDir + '/fbvideo.mp4';
-    const file = fs.createWriteStream(filePath);
-    
-    const hd = data.data.downloads.find(item => item.quality === "Download Video in HD Quality").link;
-    const userName = data.data.title;
+    const hd = data.downloads.find(v => v.quality === "Download Video in HD Quality")?.link;
+    const title = data.title || "Facebook Video";
 
-    const rqs = request(encodeURI(hd));
-    rqs.pipe(file);  
+    if (!hd) return api.sendMessage("HD ভিডিও লিংক পাওয়া যায়নি।", threadID, messageID);
+
+    const cachePath = __dirname + "/cache";
+    if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath);
+    const filePath = `${cachePath}/fbvideo.mp4`;
+
+    const file = fs.createWriteStream(filePath);
+    const videoStream = await axios({
+      method: 'GET',
+      url: hd,
+      responseType: 'stream'
+    });
+
+    videoStream.data.pipe(file);
 
     file.on('finish', () => {
-      setTimeout(function() {
-        return api.sendMessage({
-          body: `Downloaded Successfully.` + `\n\nTitle : ${userName}`,
-          attachment: fs.createReadStream(filePath)
-        }, threadID, messageID);
-      }, 5000);
+      return api.sendMessage({
+        body: `ভিডিও ডাউনলোড সম্পন্ন!\n\nTitle: ${title}`,
+        attachment: fs.createReadStream(filePath)
+      }, threadID, () => fs.unlinkSync(filePath), messageID);
     });
+
   } catch (err) {
-    api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);  
+    console.error("Download error:", err);
+    return api.sendMessage(`[ ! ] সমস্যা হয়েছে: ${err.message}`, threadID, messageID);
   }
 };
