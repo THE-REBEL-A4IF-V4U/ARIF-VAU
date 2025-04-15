@@ -1,50 +1,66 @@
-const fs = require("fs");
-const axios = require("axios");
+module.exports = {
+  config: {
+    name: "animeinfo",
+    version: "1.0.0",
+    permission: 0,
+    prefix: true,
+    credits: "TR4",
+    description: "Get detailed information about an anime",
+    category: "user",
+    usages: "[anime name]",
+    cooldowns: 5,
+  },
 
-module.exports.config = {
-  name: "movieinfo",
-  version: "1.0.0",
-  permission: 0,
-  credits: "TR4",
-  description: "Get movie information",
-  prefix: true,
-  category: "info",
-  usages: "movie name",
-  cooldowns: 5,
-};
+  start: async function({ nayan, events, args }) {},
 
-module.exports.run = async function({ api, event, args }) {
-  api.setMessageReaction("😽", event.messageID, (err) => {}, true);
-  api.sendTypingIndicator(event.threadID, true);
-  
-  const { messageID, threadID } = event;
+  handleEvent: async function({ api, event, args }) {
+    const axios = require("axios");
 
-  const movieName = args.join(" ");
-  if (!movieName) return api.sendMessage("[ ! ] Please input movie name.", threadID, messageID);
+    const animeName = args.join(" ");
+    if (!animeName) return api.sendMessage("[ ! ] Please provide an anime name.", event.threadID, event.messageID);
 
-  try {
-    // Fetch movie data from API
-    let data = await axios.get(`https://rebel-api-server.onrender.com/movie?name=${encodeURIComponent(movieName)}`);
-    const movieData = data.data;
-    
-    // Ensure genres is an array before calling .join()
-    const genres = Array.isArray(movieData.genres) ? movieData.genres.join(", ") : "Not available";
-    const releaseDate = movieData.release_date || "Not available";
-    const runtime = movieData.runtime ? `${movieData.runtime} minutes` : "Not available";
-    const overview = movieData.overview || "No description available.";
-    const rating = movieData.rating || "Not rated";
+    // Anime API URL
+    const animeInfoUrl = `https://rebel-api-server.onrender.com/anime?name=${encodeURIComponent(animeName)}`;
 
-    const movieMessage = `
-      Movie: ${movieData.title || "N/A"}
-      Release Date: ${releaseDate}
-      Runtime: ${runtime}
-      Rating: ${rating}
-      Genres: ${genres}
-      Overview: ${overview}
-    `;
+    try {
+      // Fetch anime data from the API
+      const response = await axios.get(animeInfoUrl);
+      const data = response.data;
 
-    api.sendMessage(movieMessage, threadID, messageID);
-  } catch (err) {
-    api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);
+      if (!data || data.type !== "anime") {
+        return api.sendMessage("[ ! ] Anime not found or invalid anime name.", event.threadID, event.messageID);
+      }
+
+      const { title, rating, aired, duration, episodes, genres, synopsis, poster, source } = data;
+
+      // Format genres into a string if it's an array
+      const genreList = Array.isArray(genres) ? genres.join(", ") : genres;
+
+      const animeInfoMessage = `
+        🎬 **Anime Title**: ${title}
+        🌟 **Rating**: ${rating}/10
+        📅 **Aired**: ${aired}
+        ⏱️ **Duration**: ${duration}
+        📺 **Episodes**: ${episodes}
+        📝 **Genres**: ${genreList}
+        📝 **Synopsis**: ${synopsis}
+        🎥 **Source**: ${source}
+      `;
+
+      // Use a fallback poster image if none exists
+      const animePoster = poster || "https://via.placeholder.com/500x750.png?text=No+Image+Available";
+
+      // Send the anime info along with the poster image
+      api.sendMessage({
+        body: animeInfoMessage,
+        attachment: [{
+          type: 'image',
+          url: animePoster
+        }]
+      }, event.threadID, event.messageID);
+
+    } catch (error) {
+      api.sendMessage(`Error: ${error.message}`, event.threadID, event.messageID);
+    }
   }
 };
