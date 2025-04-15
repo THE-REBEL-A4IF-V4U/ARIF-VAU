@@ -1,50 +1,65 @@
-const fs = require("fs");
-const axios = require("axios");
+module.exports = {
+  config: {
+    name: "movieinfo",
+    version: "1.0.0",
+    permission: 0,
+    prefix: true,
+    credits: "TR4",
+    description: "Get detailed information about a movie",
+    category: "user",
+    usages: "[movie name]",
+    cooldowns: 5,
+  },
 
-module.exports.config = {
-  name: "movieinfo",
-  version: "1.0.0",
-  permission: 0,
-  credits: "TR4",
-  description: "Get movie information",
-  prefix: true,
-  category: "info",
-  usages: "movie name",
-  cooldowns: 5,
-};
+  start: async function({ nayan, events, args }) {},
 
-module.exports.run = async function({ api, event, args }) {
-  api.setMessageReaction("😽", event.messageID, (err) => {}, true);
-  api.sendTypingIndicator(event.threadID, true);
-  
-  const { messageID, threadID } = event;
+  handleEvent: async function({ api, event, args }) {
+    const axios = require("axios");
 
-  const movieName = args.join(" ");
-  if (!movieName) return api.sendMessage("[ ! ] Please input movie name.", threadID, messageID);
+    const movieName = args.join(" ");
+    if (!movieName) return api.sendMessage("[ ! ] Please provide a movie name.", event.threadID, event.messageID);
 
-  try {
-    // Fetch movie data from API
-    let data = await axios.get(`https://rebel-api-server.onrender.com/movie?name=${encodeURIComponent(movieName)}`);
-    const movieData = data.data;
-    
-    // Ensure genres is an array before calling .join()
-    const genres = Array.isArray(movieData.genres) ? movieData.genres.join(", ") : "Not available";
-    const releaseDate = movieData.release_date || "Not available";
-    const runtime = movieData.runtime ? `${movieData.runtime} minutes` : "Not available";
-    const overview = movieData.overview || "No description available.";
-    const rating = movieData.rating || "Not rated";
+    // Movie API URL
+    const movieInfoUrl = `https://rebel-api-server.onrender.com/movie?name=${encodeURIComponent(movieName)}`;
 
-    const movieMessage = `
-      Movie: ${movieData.title || "N/A"}
-      Release Date: ${releaseDate}
-      Runtime: ${runtime}
-      Rating: ${rating}
-      Genres: ${genres}
-      Overview: ${overview}
-    `;
+    try {
+      // Fetch movie data from the API
+      const response = await axios.get(movieInfoUrl);
+      const data = response.data;
 
-    api.sendMessage(movieMessage, threadID, messageID);
-  } catch (err) {
-    api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);
+      if (!data || data.type !== "movie") {
+        return api.sendMessage("[ ! ] Movie not found or invalid movie name.", event.threadID, event.messageID);
+      }
+
+      const { title, rating, year, duration, genres, description, poster, source } = data;
+
+      // Format genres into a string if it's an array
+      const genreList = Array.isArray(genres) ? genres.join(", ") : genres;
+
+      const movieInfoMessage = `
+        🎬 **Movie Title**: ${title}
+        🌟 **Rating**: ${rating}/10
+        🗓️ **Year**: ${year}
+        ⏱️ **Duration**: ${duration}
+        📝 **Genres**: ${genreList}
+        📝 **Description**: ${description}
+        🎥 **Source**: ${source}
+      `;
+
+      // Use a fallback poster image if none exists
+      const moviePoster = poster || "https://via.placeholder.com/500x750.png?text=No+Image+Available";
+
+      // Send the movie info along with the poster image
+      api.sendMessage({
+        body: movieInfoMessage,
+        attachment: [{
+          type: 'image',
+          url: moviePoster
+        }]
+      }, event.threadID, event.messageID);
+
+    } catch (error) {
+      api.sendMessage(`Error: ${error.message}`, event.threadID, event.messageID);
+    }
   }
 };
