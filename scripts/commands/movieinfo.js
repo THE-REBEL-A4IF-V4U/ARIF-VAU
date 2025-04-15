@@ -1,65 +1,72 @@
+const axios = require("axios");
+const fs = require("fs-extra");
+
 module.exports = {
   config: {
     name: "movieinfo",
-    version: "1.0.0",
+    version: "1.0.1",
     permission: 0,
     prefix: true,
-    credits: "TR4",
+    credits: "TR4 + Modified by REBEL A4IF",
     description: "Get detailed information about a movie",
     category: "user",
     usages: "[movie name]",
     cooldowns: 5,
   },
 
-  start: async function({ nayan, events, args }) {},
-
-  handleEvent: async function({ api, event, args }) {
-    const axios = require("axios");
-
+  start: async function({ api, event, args }) {
     const movieName = args.join(" ");
-    if (!movieName) return api.sendMessage("[ ! ] Please provide a movie name.", event.threadID, event.messageID);
+    if (!movieName) {
+      return api.sendMessage("❌ Please provide a movie name.", event.threadID, event.messageID);
+    }
 
-    // Movie API URL
-    const movieInfoUrl = `https://rebel-api-server.onrender.com/movie?name=${encodeURIComponent(movieName)}`;
+    const url = `https://rebel-api-server.onrender.com/movie?name=${encodeURIComponent(movieName)}`;
 
     try {
-      // Fetch movie data from the API
-      const response = await axios.get(movieInfoUrl);
-      const data = response.data;
+      const res = await axios.get(url);
+      const data = res.data;
 
       if (!data || data.type !== "movie") {
-        return api.sendMessage("[ ! ] Movie not found or invalid movie name.", event.threadID, event.messageID);
+        return api.sendMessage("❌ Movie not found or invalid response.", event.threadID, event.messageID);
       }
 
-      const { title, rating, year, duration, genres, description, poster, source } = data;
+      const {
+        title,
+        rating,
+        year,
+        duration,
+        genres,
+        description,
+        poster,
+        source
+      } = data;
 
-      // Format genres into a string if it's an array
       const genreList = Array.isArray(genres) ? genres.join(", ") : genres;
 
-      const movieInfoMessage = `
-        🎬 **Movie Title**: ${title}
-        🌟 **Rating**: ${rating}/10
-        🗓️ **Year**: ${year}
-        ⏱️ **Duration**: ${duration}
-        📝 **Genres**: ${genreList}
-        📝 **Description**: ${description}
-        🎥 **Source**: ${source}
-      `;
+      const info = 
+`🎬 𝗧𝗶𝘁𝗹𝗲: ${title}
+🌟 𝗥𝗮𝘁𝗶𝗻𝗴: ${rating}/10
+📅 𝗬𝗲𝗮𝗿: ${year}
+⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: ${duration}
+🎭 𝗚𝗲𝗻𝗿𝗲𝘀: ${genreList}
+📝 𝗗𝗲𝘀𝗰𝗿𝗶𝗽𝘁𝗶𝗼𝗻: ${description}
+📡 𝗦𝗼𝘂𝗿𝗰𝗲: ${source}`;
 
-      // Use a fallback poster image if none exists
-      const moviePoster = poster || "https://via.placeholder.com/500x750.png?text=No+Image+Available";
+      const imgPath = __dirname + "/cache/movieposter.jpg";
 
-      // Send the movie info along with the poster image
-      api.sendMessage({
-        body: movieInfoMessage,
-        attachment: [{
-          type: 'image',
-          url: moviePoster
-        }]
-      }, event.threadID, event.messageID);
+      const imgData = await axios.get(poster, { responseType: "arraybuffer" });
+      fs.writeFileSync(imgPath, Buffer.from(imgData.data, "utf-8"));
 
-    } catch (error) {
-      api.sendMessage(`Error: ${error.message}`, event.threadID, event.messageID);
+      return api.sendMessage({
+        body: info,
+        attachment: fs.createReadStream(imgPath)
+      }, event.threadID, () => fs.unlinkSync(imgPath), event.messageID);
+
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage(`❌ Error: ${err.message}`, event.threadID, event.messageID);
     }
-  }
+  },
+
+  handleEvent: async function () {} // Not used for this command
 };
