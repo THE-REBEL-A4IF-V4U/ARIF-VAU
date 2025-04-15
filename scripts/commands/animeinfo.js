@@ -1,51 +1,49 @@
+const fs = require("fs");
 const axios = require("axios");
 
 module.exports.config = {
-  name: "animeinfo",
+  name: "movieinfo",
   version: "1.0.0",
   permission: 0,
   credits: "TR4",
-  description: "Fetch anime information",
-  prefix: true, // No prefix required
+  description: "Get movie information",
+  prefix: true,
   category: "info",
-  usages: "anime name",
+  usages: "movie name",
   cooldowns: 5,
 };
 
 module.exports.run = async function({ api, event, args }) {
+  api.setMessageReaction("😽", event.messageID, (err) => {}, true);
+  api.sendTypingIndicator(event.threadID, true);
+  
   const { messageID, threadID } = event;
 
-  // Get anime name from the user's input
-  const animeName = args.join(" ");
-  if (!animeName) return api.sendMessage("[ ! ] Please provide an anime name.", threadID, messageID);
+  const movieName = args.join(" ");
+  if (!movieName) return api.sendMessage("[ ! ] Please input movie name.", threadID, messageID);
 
   try {
-    // Fetch anime data from the API
-    let response = await axios.get(`https://rebel-api-server.onrender.com/anime?name=${encodeURIComponent(animeName)}`);
-    const data = response.data;
+    // Fetch movie data from API
+    let data = await axios.get(`https://rebel-api-server.onrender.com/movie?name=${encodeURIComponent(movieName)}`);
+    const movieData = data.data;
+    
+    // Ensure genres is an array before calling .join()
+    const genres = Array.isArray(movieData.genres) ? movieData.genres.join(", ") : "Not available";
+    const releaseDate = movieData.release_date || "Not available";
+    const runtime = movieData.runtime ? `${movieData.runtime} minutes` : "Not available";
+    const overview = movieData.overview || "No description available.";
+    const rating = movieData.rating || "Not rated";
 
-    if (!data || !data.title) {
-      return api.sendMessage("[ ! ] Anime not found or the link is invalid.", threadID, messageID);
-    }
-
-    const { title, description, rating, genres, episodes, status, poster } = data;
-
-    // Prepare the response message
-    const message = `
-      **Anime Title**: ${title}
-      **Description**: ${description || "No description available."}
-      **Rating**: ${rating || "N/A"}
-      **Genres**: ${genres ? genres.join(", ") : "N/A"}
-      **Episodes**: ${episodes || "N/A"}
-      **Status**: ${status || "N/A"}
+    const movieMessage = `
+      Movie: ${movieData.title || "N/A"}
+      Release Date: ${releaseDate}
+      Runtime: ${runtime}
+      Rating: ${rating}
+      Genres: ${genres}
+      Overview: ${overview}
     `;
 
-    // Send the response
-    return api.sendMessage({
-      body: message,
-      attachment: poster ? [poster] : []
-    }, threadID, messageID);
-
+    api.sendMessage(movieMessage, threadID, messageID);
   } catch (err) {
     api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);
   }
