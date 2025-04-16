@@ -1,38 +1,85 @@
+const axios = require("axios");
+const fs = require("fs");
+
 module.exports.config = {
-	 name: "adduser",
-	 version: "1.1.0",
-	 permission: 0,
-	 credits: "TR4",
-	 description: "add user by uid ",
-	 prefix: true,
-	 category: "with prefix",
-	 cooldowns: 0
+  name: "adduser",
+  version: "3.0.0",
+  permission: 1,
+  credits: "REBEL A4IF",
+  description: "Add users to group via UID or profile link with welcome message, logging & admin tagging",
+  prefix: false,
+  category: "group",
+  usages: "/adduser <uid/link> [welcome message]",
+  cooldowns: 5,
+  dependencies: {
+    "axios": ""
+  }
 };
 
+module.exports.run = async ({ api, event, args }) => {
+  if (args.length === 0) {
+    return api.sendMessage("❌ Usage: /adduser <uid or profile link> [optional welcome message]", event.threadID);
+  }
 
-module.exports.run = async function ({ api, event, args, Threads, Users }) {
-const { threadID, messageID } = event;
-const axios = require('axios')
-const link = args.join(" ")
-if(!args[0]) return api.sendMessage('Please enter the link or user id you want to add to the group!', threadID, messageID);
-var { participantIDs, approvalMode, adminIDs } = await api.getThreadInfo(threadID);
-if(link.indexOf(".com/")!==-1) {
-	const res = await api.getUID(args[0] || event.messageReply.body);
-	var uidUser = res
-	api.addUserToGroup(uidUser, threadID, (err) => {
-	if (participantIDs.includes(uidUser)) return api.sendMessage(`The member is already in the group`, threadID, messageID);
-	if (err) return api.sendMessage(`Can't add members to the group`, threadID, messageID);
-	else if (approvalMode && !adminIDs.some(item => item.id == api.getCurrentUserID())) return api.sendMessage(`Added user to approval list`, threadID, messageID);
-	else return api.sendMessage(`Successfully added members to the group`, threadID, messageID);
-	});
-	}
-else { 
-	var uidUser = args[0] 
-	api.addUserToGroup(uidUser, threadID, (err) => {
-	if (participantIDs.includes(uidUser)) return api.sendMessage(`The member is already in the group`, threadID, messageID);
-	if (err) return api.sendMessage(`Can't add members to the group`, threadID, messageID);
-	else if (approvalMode && !adminIDs.some(item => item.id == api.getCurrentUserID())) return api.sendMessage(`Added user to approval list`, threadID, messageID);
-	else return api.sendMessage(`Successfully added members to the group`, threadID, messageID);
-	});
-}
-}
+  const inputs = args.filter(arg => arg.includes("facebook.com") || /^\d+$/.test(arg));
+  const message = args.slice(inputs.length).join(" ") || "Welcome to the group!";
+  const threadInfo = await api.getThreadInfo(event.threadID);
+  const added = [], failed = [];
+
+  for (const input of inputs) {
+    let uid;
+
+    // Step 1: Get UID
+    if (/^\d+$/.test(input)) {
+      uid = input;
+    } else {
+      try {
+        const res = await axios.get(`https://id.traodoisub.com/api.php?link=${encodeURIComponent(input)}`);
+        uid = res.data.id;
+        if (!uid) throw new Error("UID not found.");
+      } catch (e) {
+        failed.push({ input, reason: "❌ Invalid profile link or UID fetch failed." });
+        continue;
+      }
+    }
+
+    // Step 2: Check if already in group
+    if (threadInfo.participantIDs.includes(uid)) {
+      failed.push({ input: uid, reason: "⚠️ Already in group" });
+      continue;
+    }
+
+    // Step 3: Try to add
+    try {
+      await api.addUserToGroup(uid, event.threadID);
+
+      // Get admin list & build mentions
+      const admins = threadInfo.adminIDs.map(a => a.id).filter(id => id !== api.getCurrentUserID());
+      const adminMentions = admins.map((id, index) => ({
+        tag: `@admin${index + 1}`,
+        id: id
+      }));
+
+      // Send welcome message with admin tagging
+      await api.sendMessage({
+        body: `✅ Added: @user\n${message}\n\nNotifying admins: ${adminMentions.map(m => m.tag).join(" ")}`,
+        mentions: [
+          { tag: "@user", id: uid },
+          ...adminMentions
+        ]
+      }, event.threadID);
+
+      // Logging
+      fs.appendFileSync("adduser.log", `[${new Date().toISOString()}] ADDED: ${uid} BY: ${event.senderID}\n`);
+      added.push(uid);
+    } catch (err) {
+      console.error("Add failed:", err);
+      failed.push({ input: uid, reason: "❌ Invite blocked or user blocked bot" });
+    }
+  }
+
+  // Final Summary
+  const summary = `✅ Added: ${added.length}\n❌ Failed: ${failed.length}\n` +
+    failed.map(f => `- ${f.input}: ${f.reason}`).join("\n");
+  return api.sendMessage(summary, event.threadID);
+};
