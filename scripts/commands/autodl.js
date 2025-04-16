@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports.config = {
-  name: "media",
+  name: "m",
   version: "1.1.0",
   permission: 0,
   credits: "REBEL A4IF",
