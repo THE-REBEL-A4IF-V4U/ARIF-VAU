@@ -9,7 +9,7 @@ const fs = require("fs");
 const login = require('../system/login/index.js');
 const moment = require("moment-timezone");
 const logger = require("./Rebelc.js");
-const gradient = require("gradient-string");
+const gradient = require("gradient-string")
 const process = require("process");
 const listbuiltinModules = require("module").builtinModules;
 
@@ -187,7 +187,7 @@ function onBot({ models: botModel }) {
         const commandsPath = `../../scripts/commands`;
         const listCommand = readdirSync(commandsPath).filter(command => command.endsWith('.js') && !command.includes('example') && !global.config.disabledcmds.includes(command));
   console.clear();
-  console.log(chalk.blue(`DEPLOYING Rebel COMMANDS888\n`));
+  console.log(chalk.blue(`DEPLOYING Rebel COMMANDS\n`));
         for (const command of listCommand) {
           try {
             const module = require(`${commandsPath}/${command}`);
@@ -272,44 +272,18 @@ function onBot({ models: botModel }) {
         }
       })(),
 
-(async () => {
-  const events = readdirSync(join(global.client.mainPath, '../../scripts/events')).filter(ev => ev.endsWith('.js') && !global.config.disabledevents.includes(ev));
-  console.log(chalk.blue(`\n` + `●──DEPLOYING ALL Rebel EVENTS──●\n`));
-  
-  for (const ev of events) {
-    try {
-      const event = require(join(global.client.mainPath, '../../scripts/events', ev));
-      const { config, onLoad, run } = event;
-      
-      if (!config || !config.name || !run) {
-        global.loading.err(`${chalk.hex('#ff7100')(``)} ${chalk.hex("#FFFF00")(ev)} module is not in the correct format. `, "[Rebel]");
-        continue;
-      }
+      (async () => {
+        const events = readdirSync(join(global.client.mainPath, '../../scripts/events')).filter(ev => ev.endsWith('.js') && !global.config.disabledevents.includes(ev));
+        console.log(chalk.blue(`\n` + `●──DEPLOYING ALL Rebel EVENTS──●\n`));
+        for (const ev of events) {
+          try {
+            const event = require(join(global.client.mainPath, '../../scripts/events', ev));
+            const { config, onLoad, run } = event;
+            if (!config || !config.name || !run) {
+              global.loading.err(`${chalk.hex('#ff7100')(``)} ${chalk.hex("#FFFF00")(ev)} module is not in the correct format. `, "[Rebel]");
+              continue;
+            }
 
-      if (global.client.events.has(config.name)) {
-        global.loading.err(`${chalk.hex('#ff7100')(``)} ${chalk.hex("#FFFF00")(ev)} module is already deployed.`, "[Rebel]");
-        continue;
-      }
-
-      // Register event if no issues
-      global.client.events.set(config.name, event);
-      
-      // Call onLoad if it exists
-      if (onLoad) {
-        const eventData = {
-          api: loginApiData, 
-          models: botModel
-        };
-        await onLoad(eventData);
-      }
-
-      global.loading(`${crayon(``)}successfully deployed ${chalk.blueBright(config.name)}`, "[Rebel]");
-
-    } catch (err) {
-      global.loading.err(`${chalk.hex("#ff0000")('')}${chalk.blueBright(ev)} failed with error : ${err.message}` + `\n`, "[Rebel]");
-    }
-  }
-})();
 
             if (errorMessages.length > 0) {
               console.log("commands with errors :");
