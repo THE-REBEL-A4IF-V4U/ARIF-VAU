@@ -3,65 +3,58 @@ module.exports.config = {
   version: "1.0.0",
   permission: 0,
   prefix: true,
-  credits: "rebel",
+  credits: "farhan",
   description: "Upload an image or video with a tag and description.",
   category: "media",
-  usages: "[tag] [description] [reply with image/video]",
+  usages: "[tag] [description] [image/video]",
   cooldowns: 0,
 };
 
 module.exports.run = async ({ api, event, args }) => {
-  const axios = require("axios");
-  const FormData = require("form-data");
-
-  const tag = args[0];
-  const description = args.slice(1).join(" ");
-  const attachment = event.messageReply?.attachments?.[0];
-
-  const validTags = ["islamic", "romantic", "hot", "sad", "funny", "shairi"];
-
-  if (!attachment || !tag || !description) {
-    return api.sendMessage(
-      "[⚠️] Please reply to an image/video and include a tag + description.\nUsage: add [tag] [description]",
-      event.threadID,
-      event.messageID
-    );
+  const axios = require('axios');
+  const fs = require('fs');
+  const request = require('request');
+  const FormData = require('form-data');
+  
+  const tag = args[0];  // Tag for categorizing media (e.g., romantic, funny, etc.)
+  const description = args[1];  // Description for the media
+  const mediaUrl = event.messageReply.attachments && event.messageReply.attachments[0].url;  // Get URL from the media attachment
+  
+  // If media (image/video) is not provided or tag/description is missing, return error
+  if (!mediaUrl || !tag || !description) {
+    return api.sendMessage('[⚠️] Please provide a valid image/video, tag, and description.', event.threadID, event.messageID);
   }
 
+  // List of valid tags
+  const validTags = [
+    "islamic", "romantic", "hot", "sad", "funny", "shairi"
+  ];
+
+  // Check if the provided tag is valid
   if (!validTags.includes(tag.toLowerCase())) {
-    return api.sendMessage(
-      `[⚠️] Invalid tag. Use one of: ${validTags.join(", ")}`,
-      event.threadID,
-      event.messageID
-    );
+    return api.sendMessage(`[⚠️] Invalid tag. Please use one of the following tags: ${validTags.join(", ")}`, event.threadID, event.messageID);
   }
 
   try {
-    const mediaRes = await axios.get(attachment.url, { responseType: "stream" });
-    const ext = attachment.type === "video" ? "mp4" : "jpg";
+    // Create form data for uploading media
+    const formData = new FormData();
+    formData.append("file", request(mediaUrl));  // Request the media URL and append to the form
+    formData.append("text", description);  // Add description to form data
+    formData.append("tag", tag);  // Add the tag to form data
 
-    const form = new FormData();
-    form.append("file", mediaRes.data, { filename: `upload.${ext}` });
-    form.append("text", description);
-    form.append("tag", tag.toLowerCase());
+    // Send the media to the API for uploading
+    const response = await axios.post('https://rebel-api-server.onrender.com/api/media/add', formData, {
+      headers: formData.getHeaders(),
+    });
 
-    const response = await axios.post(
-      "https://rebel-api-server.onrender.com/api/media/add",
-      form,
-      { headers: form.getHeaders() }
-    );
-
+    // If successful, send the media link to the user
     if (response.data.success) {
-      return api.sendMessage(
-        `[✅] Media uploaded successfully!\nTag: ${tag}\nType: ${attachment.type}\nLink: ${response.data.data.link}`,
-        event.threadID,
-        event.messageID
-      );
+      return api.sendMessage(`[✅] Successfully uploaded media to the server. Here is your media: ${response.data.data.link}`, event.threadID, event.messageID);
     } else {
-      return api.sendMessage("[⚠️] Upload failed. Try again later.", event.threadID, event.messageID);
+      return api.sendMessage('[⚠️] Failed to upload media. Please try again later.', event.threadID, event.messageID);
     }
-  } catch (err) {
-    console.error("Upload Error:", err);
-    return api.sendMessage("[⚠️] Error occurred: " + err.message, event.threadID, event.messageID);
+  } catch (e) {
+    console.error("Error occurred during media upload:", e);
+    return api.sendMessage('[⚠️] An error occurred while uploading media. Please try again later.', event.threadID, event.messageID);
   }
 };
