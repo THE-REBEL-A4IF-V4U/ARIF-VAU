@@ -8,17 +8,20 @@ module.exports.config = {
 module.exports.run = async function ({ api, event }) {
   const senderID = event.senderID;
 
-  // Step 1: Blacklist user IDs
-  const blacklist = ["1000123456789", "1000111122223333"]; // Add your spammer IDs here
+  // Check if the event is a message (text or sticker etc.)
+  if (!event.body && !event.attachments?.length) return;
+
+  // Step 1: Blacklist system
+  const blacklist = ["1000123456789", "1000111122223333"];
   if (blacklist.includes(senderID)) {
     console.log(`Blocked user tried to message: ${senderID}`);
     return;
   }
 
   try {
-    // Step 2: Check if already accepted
+    // Step 2: Check if thread already accepted
     const info = await api.getThreadInfo(senderID);
-    if (info.isSubscribed) return; // Already accepted
+    if (info.isSubscribed) return;
 
     // Step 3: Random welcome messages
     const messages = [
@@ -30,15 +33,15 @@ module.exports.run = async function ({ api, event }) {
     ];
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
-    // Step 4: Accept request & send message
+    // Step 4: Accept the message request and send welcome
     await api.handleMarkAsRead(senderID);
     await api.sendMessage(
       `${randomMessage}\n\nTHIS BOT MADE BY ARIF VAU\nACCOUNT LINK: https://www.facebook.com/ARIF.THE.REBEL.233`,
       senderID
     );
 
-    console.log(`Accepted and greeted user: ${senderID}`);
+    console.log(`Accepted & welcomed user: ${senderID}`);
   } catch (err) {
-    console.error("Auto accept failed:", err.message);
+    console.error("Auto accept error:", err.message);
   }
 };
