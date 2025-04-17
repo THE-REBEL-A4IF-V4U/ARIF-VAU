@@ -1,56 +1,55 @@
 const fs = require('fs');
-const request = require('request');
+const axios = require('axios');
 
 module.exports.config = {
     name: "adminnoti",
-    version: "1.0.0",
+    version: "1.0.1",
     permission: 2,
-    credits: "ryuko",
-    description: "",
+    credits: "fixed by rebel a4if",
+    description: "Send notification from admin to all threads",
     prefix: true,
     category: "admin",
     usages: "[msg]",
     cooldowns: 5,
-}
+};
 
 let atmDir = [];
 
-const getAtm = (atm, body) => new Promise(async (resolve) => {
-    let msg = {}, attachment = [];
-    msg.body = body;
-    for(let eachAtm of atm) {
-        await new Promise(async (resolve) => {
-            try {
-                let response =  await request.get(eachAtm.url),
-                    pathName = response.uri.pathname,
-                    ext = pathName.substring(pathName.lastIndexOf(".") + 1),
-                    path = __dirname + `/cache/${eachAtm.filename}.${ext}`
-                response
-                    .pipe(fs.createWriteStream(path))
-                    .on("close", () => {
-                        attachment.push(fs.createReadStream(path));
-                        atmDir.push(path);
-                        resolve();
-                    })
-            } catch(e) { console.log(e); }
-        })
+async function getAtm(attachments, body) {
+    let msg = { body };
+    let files = [];
+    for (const atm of attachments) {
+        try {
+            const res = await axios.get(atm.url, { responseType: 'stream' });
+            const ext = atm.type.split('/')[1] || 'jpg';
+            const path = __dirname + `/cache/${atm.filename || Date.now()}.${ext}`;
+            const writer = fs.createWriteStream(path);
+            res.data.pipe(writer);
+            await new Promise(resolve => writer.on('finish', resolve));
+            files.push(fs.createReadStream(path));
+            atmDir.push(path);
+        } catch (err) {
+            console.error('Download error:', err);
+        }
     }
-    msg.attachment = attachment;
-    resolve(msg);
-})
+    if (files.length > 0) msg.attachment = files;
+    return msg;
+}
 
-module.exports.handleReply = async function ({ api, event, handleReply, Users, Threads, getText }) {
-    
+module.exports.handleReply = async function({ api, event, handleReply, Users, Threads }) {
     const moment = require("moment-timezone");
-      var gio = moment.tz("Asia/Dhaka").format("DD/MM/YYYY - HH:mm:s");
-    const { threadID, messageID, senderID, body } = event;
-    let name = await Users.getNameUser(senderID);
+    const gio = moment.tz("Asia/Dhaka").format("DD/MM/YYYY - HH:mm:ss");
+    const { threadID, messageID, senderID, body, attachments } = event;
+    const name = await Users.getNameUser(senderID);
+
     switch (handleReply.type) {
         case "sendnoti": {
-            let text = `${name} replied to your announce\n\ntime : ${gio}\nreply : ${body}\n\nfrom group : ${(await Threads.getInfo(threadID)).threadName || "unknown"}`;
-            if(event.attachments.length > 0) text = await getAtm(event.attachments, `${body}${name} replied to your announce\n\ntime : ${gio}\n\nfrom group : ${(await Threads.getInfo(threadID)).threadName || "unknown"}`);
-            api.sendMessage(text, handleReply.threadID, (err, info) => {
-                atmDir.forEach(each => fs.unlinkSync(each))
+            let text = `${name} replied to your announcement\n\nTime: ${gio}\nReply: ${body}\n\nFrom group: ${(await Threads.getInfo(threadID)).threadName || "Unknown"}`;
+            let msg = { body: text };
+            if (attachments.length > 0) msg = await getAtm(attachments, text);
+
+            api.sendMessage(msg, handleReply.threadID, (err, info) => {
+                atmDir.forEach(file => fs.unlinkSync(file));
                 atmDir = [];
                 global.client.handleReply.push({
                     name: this.config.name,
@@ -58,58 +57,70 @@ module.exports.handleReply = async function ({ api, event, handleReply, Users, T
                     messageID: info.messageID,
                     messID: messageID,
                     threadID
-                })
+                });
             });
             break;
         }
+
         case "reply": {
-            let text = `admin ${name} replied to you\n\nreply : ${body}\n\nreply to this message if you want to respond again.`;
-            if(event.attachments.length > 0) text = await getAtm(event.attachments, `${body}${name} replied to you\n\nreply to this message if you want to respond again.`);
-            api.sendMessage(text, handleReply.threadID, (err, info) => {
-                atmDir.forEach(each => fs.unlinkSync(each))
+            let text = `Admin ${name} replied to you\n\nReply: ${body}\n\nReply to this message if you want to respond again.`;
+            let msg = { body: text };
+            if (attachments.length > 0) msg = await getAtm(attachments, text);
+
+            api.sendMessage(msg, handleReply.threadID, (err, info) => {
+                atmDir.forEach(file => fs.unlinkSync(file));
                 atmDir = [];
                 global.client.handleReply.push({
                     name: this.config.name,
                     type: "sendnoti",
                     messageID: info.messageID,
                     threadID
-                })
+                });
             }, handleReply.messID);
             break;
         }
     }
-}
+};
 
-module.exports.run = async function ({ api, event, args, Users }) {
+module.exports.run = async function({ api, event, args, Users }) {
     const moment = require("moment-timezone");
-      var gio = moment.tz("Asia/Manila").format("DD/MM/YYYY - HH:mm:s");
+    const gio = moment.tz("Asia/Manila").format("DD/MM/YYYY - HH:mm:ss");
     const { threadID, messageID, senderID, messageReply } = event;
-    if (!args[0]) return api.sendMessage("please input message", threadID);
-    let allThread = global.data.allThreadID || [];
-    let can = 0, canNot = 0;
-    let text = `message from admins\n\ntime : ${gio}\nadmin name : ${await Users.getNameUser(senderID)}\nmessage : ${args.join(" ")}\n\nreply to this message if you want to respond from this announce.`;
-    if(event.type == "message_reply") text = await getAtm(messageReply.attachments, `message from admins\n\ntime : ${gio}\nadmin name : ${await Users.getNameUser(senderID)}\nmessage : ${args.join(" ")}\n\nreply to this message if you want to respond from this announce.`);
-    await new Promise(resolve => {
-        allThread.forEach((each) => {
-            try {
-                api.sendMessage(text, each, (err, info) => {
-                    if(err) { canNot++; }
-                    else {
-                        can++;
-                        atmDir.forEach(each => fs.unlinkSync(each))
-                        atmDir = [];
-                        global.client.handleReply.push({
-                            name: this.config.name,
-                            type: "sendnoti",
-                            messageID: info.messageID,
-                            messID: messageID,
-                            threadID
-                        })
-                        resolve();
-                    }
-                })
-            } catch(e) { console.log(e) }
-        })
-    })
-    api.sendMessage(`send to ${can} thread, not send to ${canNot} thread`, threadID);
-}
+    if (!args[0]) return api.sendMessage("Please input message.", threadID);
+
+    const allThread = global.data.allThreadID || [];
+    let canSend = 0, cannotSend = 0;
+    const senderName = await Users.getNameUser(senderID);
+
+    let text = `Message from Admin\n\nTime: ${gio}\nAdmin: ${senderName}\nMessage: ${args.join(" ")}\n\nReply to this message if you want to respond.`;
+    let msg = { body: text };
+    if (event.type === "message_reply" && messageReply.attachments.length > 0) {
+        msg = await getAtm(messageReply.attachments, text);
+    }
+
+    for (const id of allThread) {
+        try {
+            await api.sendMessage(msg, id, (err, info) => {
+                if (err) cannotSend++;
+                else {
+                    canSend++;
+                    global.client.handleReply.push({
+                        name: this.config.name,
+                        type: "sendnoti",
+                        messageID: info.messageID,
+                        messID: messageID,
+                        threadID: id
+                    });
+                }
+            });
+        } catch (err) {
+            console.error(err);
+            cannotSend++;
+        }
+    }
+
+    atmDir.forEach(file => fs.unlinkSync(file));
+    atmDir = [];
+
+    api.sendMessage(`Sent to ${canSend} thread(s), failed to send to ${cannotSend} thread(s).`, threadID);
+};
