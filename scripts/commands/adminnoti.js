@@ -4,9 +4,9 @@ const path = require('path');
 
 module.exports.config = {
     name: "adminnoti",
-    version: "2.0.2",
+    version: "2.0.3",
     permission: 2,
-    credits: "Rebel A4IF Fixed",
+    credits: "Rebel A4IF Fixed Improved",
     description: "Send admin notification to all groups (text or attachment supported)",
     prefix: true,
     category: "admin",
@@ -27,7 +27,7 @@ async function downloadAttachment(atm) {
 module.exports.run = async function({ api, event, args, Users }) {
     const { threadID, senderID, messageReply } = event;
     if (!args[0] && (!messageReply || messageReply.attachments.length === 0)) {
-        return api.sendMessage("Please provide a message or reply to an attachment.", threadID);
+        return api.sendMessage("❌ Please provide a message or reply to an attachment.", threadID);
     }
 
     const allThread = global.data.allThreadID || [];
@@ -35,12 +35,13 @@ module.exports.run = async function({ api, event, args, Users }) {
     const senderName = await Users.getNameUser(senderID);
 
     const bodyText = args.length > 0 
-        ? `Admin Notification\n\nFrom: ${senderName}\n\nMessage: ${args.join(' ')}`
-        : `Admin Notification\n\nFrom: ${senderName}\n\n[Attachment]`;
+        ? `📢 Admin Notification\n\n👤 From: ${senderName}\n\n📝 Message: ${args.join(' ')}`
+        : `📢 Admin Notification\n\n👤 From: ${senderName}\n\n📎 [Attachment]`;
 
     let attachments = [];
     let filePaths = [];
 
+    // If user replied to attachment
     if (messageReply && messageReply.attachments.length > 0) {
         for (const atm of messageReply.attachments) {
             try {
@@ -58,45 +59,7 @@ module.exports.run = async function({ api, event, args, Users }) {
         msg.attachment = attachments;
     }
 
-    for (const id of allThread) {
-        try {
-            await api.sendMessage(msg, id);
-            success++;
-            await new Promise(res => setTimeout(res, 500)); // half second delay
-        } catch (err) {
-            failed++;
-            console.error(`Failed to send to ${id}:`, err);
-        }
-    }
-
-    // Cleanup cache
-    for (const file of filePaths) {
-        try { fs.unlinkSync(file); } catch (e) {}
-    }
-
-    api.sendMessage(`Notification Sent!\nSuccess: ${success} group(s)\nFailed: ${failed} group(s)`, threadID);
-};    const bodyText = args.length > 0 
-        ? `Admin Notification\n\nFrom: ${senderName}\n\nMessage: ${args.join(' ')}`
-        : `Admin Notification\n\nFrom: ${senderName}\n\n[Attachment]`;
-
-    let attachments = [];
-
-    if (messageReply && messageReply.attachments.length > 0) {
-        for (const atm of messageReply.attachments) {
-            try {
-                const filePath = await downloadAttachment(atm);
-                attachments.push(fs.createReadStream(filePath));
-            } catch (err) {
-                console.error('Attachment download failed:', err);
-            }
-        }
-    }
-
-    const msg = { body: bodyText };
-    if (attachments.length > 0) {
-        msg.attachment = attachments;
-    }
-
+    // Send to all groups
     for (const id of allThread) {
         try {
             await api.sendMessage(msg, id);
@@ -109,11 +72,9 @@ module.exports.run = async function({ api, event, args, Users }) {
     }
 
     // Cleanup cache
-    if (attachments.length > 0) {
-        for (const file of attachments) {
-            try { fs.unlinkSync(file.path); } catch (e) {}
-        }
+    for (const file of filePaths) {
+        try { fs.unlinkSync(file); } catch (e) {}
     }
 
-    api.sendMessage(`Notification Sent!\nSuccess: ${success} group(s)\nFailed: ${failed} group(s)`, threadID);
+    return api.sendMessage(`✅ Notification Sent!\n\nSuccess: ${success} group(s)\nFailed: ${failed} group(s)`, threadID);
 };
