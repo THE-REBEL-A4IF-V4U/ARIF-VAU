@@ -748,103 +748,94 @@ function _formatAttachment(attachment1, attachment2) {
 					return obj;
 				}, {}),
 
-				facebookUrl: blob.story_attachment.url, // @Legacy
-				target: blob.story_attachment.target, // @Legacy
-				styleList: blob.story_attachment.style_list // @Legacy
-			};
-		case "MessageFile":
-			return {
-				type: "file",
-				ID: blob.message_file_fbid,
-				fullFileName: fullFileName,
-				filename: blob.filename,
-				fileSize: fileSize,
-				mimeType: blob.mimetype,
-				original_extension: blob.original_extension || fullFileName.split(".").pop(),
-
-				url: blob.url,
-				isMalicious: blob.is_malicious,
-				contentType: blob.content_type,
-
-				name: blob.filename
-			};
-		default:
-			throw new Error(
-				"unrecognized attach_file of type " +
-				type +
-				"`" +
-				JSON.stringify(attachment1, null, 4) +
-				" attachment2: " +
-				JSON.stringify(attachment2, null, 4) +
-				"`"
-			);
-	}
+				facebookUrl: blob?.story_attachment?.url || null, // @Legacy
+target: blob?.story_attachment?.target || null,   // @Legacy
+styleList: blob?.story_attachment?.style_list || [] // @Legacy
+};
+case "MessageFile":
+  return {
+    type: "file",
+    ID: blob?.message_file_fbid || null,
+    fullFileName: fullFileName || null,
+    filename: blob?.filename || null,
+    fileSize: fileSize || 0,
+    mimeType: blob?.mimetype || "application/octet-stream",
+    original_extension: blob?.original_extension || (fullFileName ? fullFileName.split(".").pop() : null),
+    url: blob?.url || null,
+    isMalicious: blob?.is_malicious || false,
+    contentType: blob?.content_type || "unknown",
+    name: blob?.filename || "unknown"
+  };
+default:
+  console.error("Unknown attachment type:", type, attachment1, attachment2);
+  throw new Error(
+    "Unrecognized attach_file of type `" +
+    type +
+    "` attachment1: " +
+    JSON.stringify(attachment1, null, 4) +
+    " attachment2: " +
+    JSON.stringify(attachment2, null, 4) +
+    "`"
+  );
+}
 }
 
 function formatAttachment(attachments, attachmentIds, attachmentMap, shareMap) {
-	attachmentMap = shareMap || attachmentMap;
-	return attachments
-		? attachments.map(function (val, i) {
-			if (
-				!attachmentMap ||
-				!attachmentIds ||
-				!attachmentMap[attachmentIds[i]]
-			) {
-				return _formatAttachment(val);
-			}
-			return _formatAttachment(val, attachmentMap[attachmentIds[i]]);
-		})
-		: [];
+  attachmentMap = shareMap || attachmentMap;
+  return Array.isArray(attachments) && attachments.length
+    ? attachments.map(function (val, i) {
+        if (
+          !attachmentMap ||
+          !attachmentIds ||
+          !attachmentMap[attachmentIds[i]]
+        ) {
+          return _formatAttachment(val);
+        }
+        return _formatAttachment(val, attachmentMap[attachmentIds[i]]);
+      })
+    : [];
 }
 
 function formatDeltaMessage(m) {
-	var md = m.delta.messageMetadata;
+  const md = m?.delta?.messageMetadata;
+  const mdata = m?.delta?.data?.prng ? JSON.parse(m.delta.data.prng) : [];
+  const m_id = mdata.map(u => u.i);
+  const m_offset = mdata.map(u => u.o);
+  const m_length = mdata.map(u => u.l);
+  const mentions = {};
 
-	var mdata =
-		m.delta.data === undefined
-			? []
-			: m.delta.data.prng === undefined
-				? []
-				: JSON.parse(m.delta.data.prng);
-	var m_id = mdata.map(u => u.i);
-	var m_offset = mdata.map(u => u.o);
-	var m_length = mdata.map(u => u.l);
-	var mentions = {};
-	var body = m.delta.body || "";
-	var args = body == "" ? [] : body.trim().split(/\s+/);
-	for (var i = 0; i < m_id.length; i++) {
-		mentions[m_id[i]] = m.delta.body.substring(
-			m_offset[i],
-			m_offset[i] + m_length[i]
-		);
-	}
+  const body = typeof m?.delta?.body === "string" ? m.delta.body : "";
+  const args = body ? body.trim().split(/\s+/) : [];
 
-	return {
-		type: "message",
-		senderID: formatID(md.actorFbId.toString()),
-		threadID: formatID(
-			(md.threadKey.threadFbId || md.threadKey.otherUserFbId).toString()
-		),
-		args: args,
-		body: body,
-		messageID: md.messageId,
-		attachments: (m.delta.attachments || []).map(v => _formatAttachment(v)),
-		mentions: mentions,
-		timestamp: md.timestamp,
-		isGroup: !!md.threadKey.threadFbId,
-		participantIDs: m.delta.participants || []
-	};
+  for (let i = 0; i < m_id.length; i++) {
+    if (body && m_offset[i] !== undefined && m_length[i] !== undefined) {
+      mentions[m_id[i]] = body.substring(m_offset[i], m_offset[i] + m_length[i]);
+    }
+  }
+
+  return {
+    type: "message",
+    senderID: formatID(md?.actorFbId?.toString()),
+    threadID: formatID(
+      (md?.threadKey?.threadFbId || md?.threadKey?.otherUserFbId)?.toString()
+    ),
+    args: args,
+    body: body,
+    messageID: md?.messageId || null,
+    attachments: Array.isArray(m?.delta?.attachments) ? m.delta.attachments.map(v => _formatAttachment(v)) : [],
+    mentions: mentions,
+    timestamp: md?.timestamp || Date.now(),
+    isGroup: !!md?.threadKey?.threadFbId,
+    participantIDs: m?.delta?.participants || []
+  };
 }
-
 
 function formatID(id) {
-	if (id != undefined && id != null) {
-		return id.replace(/(fb)?id[:.]/, "");
-	}
-	else {
-		return id;
-	}
+  return (typeof id === "string" || typeof id === "number")
+    ? id.toString().replace(/(fb)?id[:.]/, "")
+    : null;
 }
+
 
 function formatMessage(m) {
 	var originalMessage = m.message ? m.message : m;
