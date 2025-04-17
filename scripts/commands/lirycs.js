@@ -8,7 +8,7 @@ module.exports.config = {
   credits: 'Rebel',
   description: 'Get song lyrics from Google or Musixmatch.',
   prefix: false,
-  commandCategory: 'Music',
+  category: 'Music',
   usages: '/Lyrics [song name]',
   cooldowns: 5,
 };
