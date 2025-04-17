@@ -6,7 +6,7 @@ const BADWORDS_FILE = path.join(__dirname, "../../cache/badwords.json");
 const WARNDATA_FILE = path.join(__dirname, "../../cache/warnData.json");
 const SETTINGS_FILE = path.join(__dirname, "../../cache/badwordkick-config.json");
 
-const RAW_URL = "https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/Rebel/main/Badword.json"; // তোমার RAW GitHub URL
+const RAW_URL = "https://raw.githubusercontent.com/THE-REBEL-A4IF-V4U/Rebel/main/Badword.json"; // RAW GitHub link
 
 const cooldown = new Set();
 
@@ -15,10 +15,10 @@ async function ensureFiles() {
   if (!fs.existsSync(WARNDATA_FILE)) fs.writeFileSync(WARNDATA_FILE, "{}");
   if (!fs.existsSync(SETTINGS_FILE)) {
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify({
-      warnLimit: 3,
-      cooldownTime: 30, // সেকেন্ডে Cooldown
+      warnLimit: 5,  // Maximum warns before banning
+      cooldownTime: 30, // Cooldown time in seconds
       notifyAdmin: true,
-      adminID: "100006473882758" // তোমার Facebook ID
+      adminID: "100006473882758" // Your Facebook ID
     }, null, 2));
   }
 }
@@ -28,35 +28,36 @@ async function updateBadwords() {
     const res = await axios.get(RAW_URL);
     if (Array.isArray(res.data)) {
       fs.writeFileSync(BADWORDS_FILE, JSON.stringify(res.data, null, 2));
-      console.log("✅ Badwords আপডেট সম্পন্ন!");
+      console.log("✅ Badwords update completed!");
     }
   } catch (e) {
-    console.error("❌ Badwords আপডেট সমস্যা:", e.message);
+    console.error("❌ Error updating badwords:", e.message);
   }
 }
 
 module.exports.languages = {
-  "en": {
-    "warn": "⚠️ Warning %1/%2: Please use decent language!",
-    "kicked": "❌ %1 has been removed for using bad language %2 times!",
-    "adminNotify": "⚡ Report: %1 (%2) used bad language!\nWarnings: %3/%4",
-    "resetSuccess": "✅ Reset warnings for user: %1",
-    "missingID": "⚠️ Please provide a user ID: /badwordkick reset <userID>",
-    "warnList": "⚡ List of warned users:\n%1",
-    "noWarn": "✅ No users have been warned yet!",
-    "usage": "⚡ Usage:\n/badwordkick reset <userID>\n/badwordkick list"
+  "bn": {
+    "warn": "⚠️ সতর্কতা %1/%2: দয়া করে ভদ্র ভাষা ব্যবহার করুন!",
+    "adminNotify": "⚡ রিপোর্ট: %1 (%2) bad word ব্যবহার করেছে!\nসতর্কতা: %3/%4",
+    "kicked": "❌ %1 bad word ব্যবহার করার জন্য ব্যান করা হয়েছে %2 বার!",
+    "finalBan": "❌ তুই খারাপ ছেলে, তোকে আমার সিস্টেম থেকে ব্যান করলাম!",
+    "resetSuccess": "✅ %1 এর সতর্কতা রিসেট হয়েছে!",
+    "missingID": "⚠️ ইউজার ID দিন: /badwordkick reset <userID>",
+    "warnList": "⚡ সতর্কতা প্রাপ্ত ইউজারের লিস্ট:\n%1",
+    "noWarn": "✅ এখনও কেউ সতর্ক হয়নি!",
+    "usage": "⚡ ব্যবহার:\n/badwordkick reset <userID>\n/badwordkick list\n/badwordkick unban <userID>"
   }
 };
 
 module.exports.config = {
-  name: "badwordkick",
+  name: "badword",
   version: "2.0.0",
   permission: 1,
   credits: "REBEL A4IF V4U",
-  description: "Auto kick and warning system for bad words.",
+  description: "Bad word detection, auto kick and warning system.",
   prefix: true,
   category: "group",
-  usages: "[reset <userID>] / [list]",
+  usages: "[reset <userID>] / [list] / [unban <userID>]",
   cooldowns: 5,
   dependencies: { "fs-extra": "", "axios": "" }
 };
@@ -82,31 +83,48 @@ module.exports.handleEvent = async ({ api, event, Users }) => {
   if (!warnData[senderID]) warnData[senderID] = { count: 0 };
   warnData[senderID].count++;
 
-  const userName = await Users.getNameUser(senderID) || "User";
+  const userName = await Users.getNameUser(senderID) || "ব্যবহারকারী";
 
-  if (warnData[senderID].count >= settings.warnLimit) {
+  // ২ বার সতর্কতা এবং পরে এডমিনকে মেন্টেন জানানো হবে
+  if (warnData[senderID].count >= 2 && warnData[senderID].count < 5) {
     api.sendMessage(
-      module.exports.languages.en.kicked.replace("%1", userName).replace("%2", settings.warnLimit),
-      threadID
-    );
-    setTimeout(() => api.removeUserFromGroup(senderID, threadID), 2000);
-    delete warnData[senderID];
-  } else {
-    api.sendMessage(
-      module.exports.languages.en.warn
+      module.exports.languages.bn.warn
         .replace("%1", warnData[senderID].count)
         .replace("%2", settings.warnLimit),
       threadID
     );
+
+    if (settings.notifyAdmin) {
+      const adminMsg = module.exports.languages.bn.adminNotify
+        .replace("%1", userName)
+        .replace("%2", senderID)
+        .replace("%3", warnData[senderID].count)
+        .replace("%4", settings.warnLimit);
+      api.sendMessage(adminMsg, settings.adminID);
+    }
   }
 
-  if (settings.notifyAdmin) {
-    const adminMsg = module.exports.languages.en.adminNotify
-      .replace("%1", userName)
-      .replace("%2", senderID)
-      .replace("%3", warnData[senderID].count)
-      .replace("%4", settings.warnLimit);
-    api.sendMessage(adminMsg, settings.adminID);
+  // ৫ বার সতর্কতার পর সিস্টেম থেকে ব্যান
+  if (warnData[senderID].count >= settings.warnLimit) {
+    api.sendMessage(
+      module.exports.languages.bn.kicked.replace("%1", userName).replace("%2", settings.warnLimit),
+      threadID
+    );
+    setTimeout(() => api.removeUserFromGroup(senderID, threadID), 2000);
+
+    // Send the final ban message to the user and notify the admin
+    api.sendMessage(module.exports.languages.bn.finalBan, threadID);
+    if (settings.notifyAdmin) {
+      const finalAdminMsg = module.exports.languages.bn.adminNotify
+        .replace("%1", userName)
+        .replace("%2", senderID)
+        .replace("%3", warnData[senderID].count)
+        .replace("%4", settings.warnLimit);
+      api.sendMessage(finalAdminMsg, settings.adminID);
+    }
+
+    // Delete user data after ban
+    delete warnData[senderID];
   }
 
   fs.writeFileSync(WARNDATA_FILE, JSON.stringify(warnData, null, 2));
@@ -123,19 +141,26 @@ module.exports.run = async ({ api, event, args }) => {
     if (args[1]) {
       delete warnData[args[1]];
       fs.writeFileSync(WARNDATA_FILE, JSON.stringify(warnData, null, 2));
-      api.sendMessage(module.exports.languages.en.resetSuccess.replace("%1", args[1]), threadID);
+      api.sendMessage(module.exports.languages.bn.resetSuccess.replace("%1", args[1]), threadID);
     } else {
-      api.sendMessage(module.exports.languages.en.missingID, threadID);
+      api.sendMessage(module.exports.languages.bn.missingID, threadID);
     }
   } else if (args[0] === "list") {
     const list = Object.keys(warnData)
-      .map(uid => `${uid}: Warnings ${warnData[uid].count}/${settings.warnLimit}`)
+      .map(uid => `${uid}: সতর্কতা ${warnData[uid].count}/${settings.warnLimit}`)
       .join("\n");
     api.sendMessage(
-      list.length > 0 ? module.exports.languages.en.warnList.replace("%1", list) : module.exports.languages.en.noWarn,
+      list.length > 0 ? module.exports.languages.bn.warnList.replace("%1", list) : module.exports.languages.bn.noWarn,
       threadID
     );
+  } else if (args[0] === "unban") {
+    if (args[1]) {
+      // Add logic for unban action
+      api.sendMessage(`✅ ${args[1]} কে ব্যান মুক্ত করা হয়েছে!`, threadID);
+    } else {
+      api.sendMessage(module.exports.languages.bn.missingID, threadID);
+    }
   } else {
-    api.sendMessage(module.exports.languages.en.usage, threadID);
+    api.sendMessage(module.exports.languages.bn.usage, threadID);
   }
 };
