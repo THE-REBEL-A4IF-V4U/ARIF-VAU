@@ -34,19 +34,19 @@ module.exports.run = async function({ api, event, args }) {
       return api.sendMessage("This is not a photo.", event.threadID, event.messageID);
 
     const imageUrl = attachment.url;
-    const apiKeys = ["x6mFTNH6YfBD3vCVXTwkLuqa"]; // You can add more keys here
+    const apiKeys = ["x6mFTNH6YfBD3vCVXTwkLuqa"]; // Tomar remove.bg API keys, chaile aro add korte paro.
 
     const cachePath = path.join(__dirname, 'cache');
     if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath);
 
-    const inputPath = path.join(cachePath, `photo.png`);
+    const inputPath = path.join(cachePath, `photo_${event.messageID}.png`);
     await downloader.image({ url: imageUrl, dest: inputPath });
 
     const formData = new FormData();
     formData.append('size', 'auto');
     formData.append('image_file', fs.createReadStream(inputPath));
 
-    const { data } = await axios({
+    const response = await axios({
       method: 'post',
       url: 'https://api.remove.bg/v1.0/removebg',
       data: formData,
@@ -54,11 +54,15 @@ module.exports.run = async function({ api, event, args }) {
       headers: {
         ...formData.getHeaders(),
         'X-Api-Key': apiKeys[Math.floor(Math.random() * apiKeys.length)],
-      }
+      },
+      encoding: null
     });
 
-    const outputPath = path.join(cachePath, `output.png`);
-    fs.writeFileSync(outputPath, data);
+    if (response.status != 200)
+      return api.sendMessage("Failed to remove background.", event.threadID, event.messageID);
+
+    const outputPath = path.join(cachePath, `output_${event.messageID}.png`);
+    fs.writeFileSync(outputPath, response.data);
 
     api.sendMessage({ attachment: fs.createReadStream(outputPath) }, event.threadID, () => {
       fs.unlinkSync(inputPath);
@@ -68,30 +72,5 @@ module.exports.run = async function({ api, event, args }) {
   } catch (error) {
     console.error(error);
     return api.sendMessage("An error occurred while removing background.", event.threadID, event.messageID);
-  }
-};        formData.append('size', 'auto');
-        formData.append('image_file', fs.createReadStream(inputPath), path.basename(inputPath));
-        axios({
-            method: 'post',
-            url: 'https://api.remove.bg/v1.0/removebg',
-            data: formData,
-            responseType: 'arraybuffer',
-            headers: {
-                ...formData.getHeaders(),
-                'X-Api-Key': KeyApi[Math.floor(Math.random() * KeyApi.length)],
-            },
-            encoding: null
-        })
-            .then((response) => {
-                if (response.status != 200) return console.error('Error:', response.status, response.statusText);
-                fs.writeFileSync(inputPath, response.data);
-                return api.sendMessage({ attachment: fs.createReadStream(inputPath) }, event.threadID, () => fs.unlinkSync(inputPath));
-            })
-            .catch((error) => {
-                return console.error('Request failed:', error);
-            });
-     } catch (e) {
-        console.log(e)
-        return api.sendMessage(`có cái nịt`, event.threadID, event.messageID);
   }
 };
