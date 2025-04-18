@@ -3,7 +3,7 @@ module.exports.config = {
 	version: "1.0.0",
 	permssion: 0,
 	credits: "Rebel",
-        prefix: 'awto',
+        prefix: 'true',
 	description: "Get username's github info",
 	category: "user",
 	depndencies: {"fetch": "","node-fetch": "", "moment": ""},
