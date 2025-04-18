@@ -1,12 +1,12 @@
 module.exports.config = {
   name: "calculator",
-  version: "1.0.0",
+  version: "1.1.0",
   permission: 0,
-  credits: "August Quinn",
-  description: "Perform basic scientific calculations and unit conversions",
+  credits: "Modified by Rebel from August Quinn",
+  description: "সরল গাণিতিক হিসাব এবং ইউনিট রূপান্তর করুন",
   prefix: true,
   category: "with prefix",
-  usages: "[operation] [arguments]",
+  usages: "[অপারেশন বা চিহ্ন] [সংখ্যা]",
   cooldowns: 5,
 };
 
@@ -26,53 +26,56 @@ module.exports.run = async function({ api, event, args }) {
   const userName = await getUserInfo(api, senderID);
 
   if (args.length < 2) {
-    api.sendMessage(`Hey ${userName}, the correct usage is: /Calculator [operation] [arguments]`, threadID, messageID);
-    return;
+    return api.sendMessage(`প্রিয় ${userName}, সঠিকভাবে ব্যবহার করুন:\n\n/calc [অপারেশন বা চিহ্ন] [সংখ্যা]\n\nউদাহরণ: /calc + ৫ ১০`, threadID, messageID);
   }
 
   const operation = args[0].toLowerCase();
-  const arguments = args.slice(1).map(arg => parseFloat(arg));
+  const numbers = args.slice(1).map(arg => parseFloat(arg));
 
-  let result = null;
+  if (numbers.some(isNaN)) {
+    return api.sendMessage(`⚠️ ${userName}, দয়া করে সঠিক সংখ্যা প্রদান করুন।`, threadID, messageID);
+  }
+
+  let result;
 
   switch (operation) {
     case "add":
-      result = arguments.reduce((acc, val) => acc + val, 0);
+    case "+":
+      result = numbers.reduce((acc, val) => acc + val, 0);
       break;
     case "subtract":
-      result = arguments.reduce((acc, val) => acc - val);
+    case "-":
+      result = numbers.reduce((acc, val) => acc - val);
       break;
     case "multiply":
-      result = arguments.reduce((acc, val) => acc * val, 1);
+    case "*":
+    case "x":
+      result = numbers.reduce((acc, val) => acc * val, 1);
       break;
     case "divide":
-      result = arguments.reduce((acc, val) => acc / val);
+    case "/":
+      result = numbers.reduce((acc, val) => acc / val);
       break;
     case "power":
-      result = Math.pow(arguments[0], arguments[1]);
+      result = Math.pow(numbers[0], numbers[1]);
       break;
     case "mass":
-      // ito ay kilograms to pounds
-      result = arguments[0] * 2.20462;
+      result = numbers[0] * 2.20462; // কেজি থেকে পাউন্ড
       break;
     case "temperature":
-      // celsius to fahrenheit
-      result = (arguments[0] * 9/5) + 32;
+      result = (numbers[0] * 9/5) + 32; // সেলসিয়াস থেকে ফারেনহাইট
       break;
     case "time":
-      // seconds to minutes
-      result = arguments[0] / 60;
+      result = numbers[0] / 60; // সেকেন্ড থেকে মিনিট
       break;
     case "speed":
-      // meters per second to kilometers per hour
-      result = arguments[0] * 3.6;
+      result = numbers[0] * 3.6; // মিটার/সেকেন্ড থেকে কিমি/ঘণ্টা
       break;
     default:
-      api.sendMessage(`Hey ${userName}, the provided operation is not supported.\n\n𝗔𝗩𝗔𝗜𝗟𝗔𝗕𝗟𝗘 𝗢𝗣𝗘𝗥𝗔𝗧𝗜𝗢𝗡:\n   ⓵ Add\n   ⓶ Subtract\n   ➂ Multiply\n   ➃ Divide\n   ➄ Power\n   ➅ Mass\n   ➆ Temperature\n   ➇ Time\n   ➈ Speed`, threadID, messageID);
-      return;
+      return api.sendMessage(`প্রিয় ${userName}, এই অপারেশনটি সমর্থিত নয়।\n\nআপনি এই অপারেশনগুলো ব্যবহার করতে পারেন:\n➜ + বা add (যোগ)\n➜ - বা subtract (বিয়োগ)\n➜ * বা multiply (গুণ)\n➜ / বা divide (ভাগ)\n➜ power (ঘাত)\n➜ mass (ওজন রূপান্তর)\n➜ temperature (তাপমাত্রা রূপান্তর)\n➜ time (সময় রূপান্তর)\n➜ speed (গতি রূপান্তর)`, threadID, messageID);
   }
 
-  const message = `🧮 𝗖𝗔𝗟𝗖𝗨𝗟𝗔𝗧𝗢𝗥\n\n${userName}, the result of the ${operation} operation is: ${result}`;
+  const message = `🧮 𝗖𝗔𝗟𝗖𝗨𝗟𝗔𝗧𝗢𝗥\n\n${userName}, আপনার "${operation}" হিসাবের ফলাফল হলো: ${result}`;
 
   api.sendMessage(message, threadID, messageID);
 };
