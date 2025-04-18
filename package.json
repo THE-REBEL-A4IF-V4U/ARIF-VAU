@@ -42,6 +42,7 @@
         "jimp": "^0.22.8",
         "lyrics-finder": "^21.7.0",
         "moment": "^2.29.1",
+        "mal-scraper": "^2.13.2",
         "moment-timezone": "^0.5.41",
         "mqtt": "latest",
         "node-cmd": "^5.0.0",
