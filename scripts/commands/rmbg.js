@@ -1,40 +1,75 @@
-module.exports.config = {
-  name: 'remove',
-  version: '1.1.1',
-  permssion: 2,
-  credits: 'REBEL',
-  prefix: 'awto',
-  description: 'Remove Photo Background',
-  category: 'user',
-  usages: 'rbg ( Reply images or url images )',
-  cooldowns: 2,
-  dependencies: {
-       'form-data': '',
-       'image-downloader': ''
-    }
-};
-
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs-extra');
 const path = require('path');
-const {image} = require('image-downloader');
-module.exports.run = async function({
-    api, event, args
-}){
-    try {
-        if (event.type !== "message_reply") return api.sendMessage("You must reply to a photo", event.threadID, event.messageID);
-        if (!event.messageReply.attachments || event.messageReply.attachments.length == 0) return api.sendMessage("You must reply to a photo", event.threadID, event.messageID);
-        if (event.messageReply.attachments[0].type != "photo") return api.sendMessage("This is not an image", event.threadID, event.messageID);
+const downloader = require('image-downloader');
 
-        const content = (event.type == "message_reply") ? event.messageReply.attachments[0].url : args.join(" ");
-        const KeyApi = ["x6mFTNH6YfBD3vCVXTwkLuqa"]
-        const inputPath = path.resolve(__dirname, 'cache', `photo.png`);
-         await image({
-        url: content, dest: inputPath
+module.exports.config = {
+  name: 'remove',
+  version: '1.1.1',
+  permission: 2,
+  credits: 'REBEL',
+  prefix: false,
+  description: 'Remove photo background',
+  category: 'user',
+  usages: 'remove (reply to image)',
+  cooldowns: 2,
+  dependencies: {
+    'form-data': '',
+    'image-downloader': '',
+    'fs-extra': ''
+  }
+};
+
+module.exports.run = async function({ api, event, args }) {
+  try {
+    if (event.type !== "message_reply") 
+      return api.sendMessage("Please reply to a photo.", event.threadID, event.messageID);
+
+    if (!event.messageReply.attachments || event.messageReply.attachments.length === 0) 
+      return api.sendMessage("No attachment found. Please reply to a photo.", event.threadID, event.messageID);
+
+    const attachment = event.messageReply.attachments[0];
+    if (attachment.type !== "photo") 
+      return api.sendMessage("This is not a photo.", event.threadID, event.messageID);
+
+    const imageUrl = attachment.url;
+    const apiKeys = ["x6mFTNH6YfBD3vCVXTwkLuqa"]; // You can add more keys here
+
+    const cachePath = path.join(__dirname, 'cache');
+    if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath);
+
+    const inputPath = path.join(cachePath, `photo.png`);
+    await downloader.image({ url: imageUrl, dest: inputPath });
+
+    const formData = new FormData();
+    formData.append('size', 'auto');
+    formData.append('image_file', fs.createReadStream(inputPath));
+
+    const { data } = await axios({
+      method: 'post',
+      url: 'https://api.remove.bg/v1.0/removebg',
+      data: formData,
+      responseType: 'arraybuffer',
+      headers: {
+        ...formData.getHeaders(),
+        'X-Api-Key': apiKeys[Math.floor(Math.random() * apiKeys.length)],
+      }
     });
-        const formData = new FormData();
-        formData.append('size', 'auto');
+
+    const outputPath = path.join(cachePath, `output.png`);
+    fs.writeFileSync(outputPath, data);
+
+    api.sendMessage({ attachment: fs.createReadStream(outputPath) }, event.threadID, () => {
+      fs.unlinkSync(inputPath);
+      fs.unlinkSync(outputPath);
+    }, event.messageID);
+
+  } catch (error) {
+    console.error(error);
+    return api.sendMessage("An error occurred while removing background.", event.threadID, event.messageID);
+  }
+};        formData.append('size', 'auto');
         formData.append('image_file', fs.createReadStream(inputPath), path.basename(inputPath));
         axios({
             method: 'post',
