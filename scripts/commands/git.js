@@ -1,38 +1,66 @@
+const fs = require("fs-extra");
+const axios = require("axios");
+const moment = require("moment");
+
 module.exports.config = {
-	name: "git",
-	version: "1.0.0",
-	permssion: 0,
-	credits: "Rebel",
-        prefix: true,
-	description: "Get username's github info",
-	category: "user",
-	depndencies: {"fetch": "","node-fetch": "", "moment": ""},
-	usages: "git <username>",
-	cooldowns: 5
+  name: "git",
+  version: "1.0.0",
+  permission: 0, // spelling thik
+  credits: "Rebel",
+  prefix: 'awto',
+  description: "Get username's GitHub info",
+  category: "user",
+  dependencies: {
+    "axios": "",
+    "moment": "",
+    "fs-extra": ""
+  },
+  usages: "git <username>",
+  cooldowns: 5
 };
 
 module.exports.run = async ({ api, event, args }) => {
- if (!args[0]) return api.sendMessage(`github username cannot be empty!`, event.threadID, event.messageID);
- const moment = require("moment");
- const fetch = require("node-fetch");
- const axios = global.nodemodule["axios"];
- const fs = global.nodemodule["fs-extra"];
- 
-  fetch(`https://api.github.com/users/${encodeURI(args.join(' '))}`)
-    .then(res => res.json())
-    .then(async body => {
-      if(body.message) return api.sendMessage(`User Not Found | Please Give Me A Valid Username!`, event.threadID, event.messageID);
-    let { login, avatar_url, name, id, html_url, public_repos, followers, following, location, created_at, bio } = body;
-    const info = 
-      `>>${login} Information!<<\n\nUsername: ${login}\nID: ${id}\nBio: ${bio || "No Bio"}\nPublic Repositories: ${public_repos || "None"}\nFollowers: ${followers}\nFollowing: ${following}\nLocation: ${location || "No Location"}\nAccount Created: ${moment.utc(created_at).format("dddd, MMMM, Do YYYY")}\nAvatar:`;
-      
-    let getimg = (await axios.get(`${avatar_url}`, { responseType: "arraybuffer" })).data;
-     fs.writeFileSync(__dirname+"/cache/avatargithub.png", Buffer.from(getimg, "utf-8"));
-        
-       api.sendMessage({
-        attachment: fs.createReadStream(__dirname+"/cache/avatargithub.png"),
-        body: info}, event.threadID,() => fs.unlinkSync(__dirname+"/cache/avatargithub.png"), event.messageID);
+  try {
+    if (!args[0]) {
+      return api.sendMessage(`GitHub username cannot be empty!`, event.threadID, event.messageID);
+    }
 
-    });
-    
-  };
+    const username = encodeURIComponent(args.join(' '));
+    const { data } = await axios.get(`https://api.github.com/users/${username}`);
+
+    if (data.message) {
+      return api.sendMessage(`User Not Found | Please provide a valid username!`, event.threadID, event.messageID);
+    }
+
+    const { login, avatar_url, name, id, html_url, public_repos, followers, following, location, created_at, bio } = data;
+
+    const info = 
+`== GitHub User Info ==
+
+Name: ${name || "No Name"}
+Username: ${login}
+ID: ${id}
+Bio: ${bio || "No Bio"}
+Public Repositories: ${public_repos}
+Followers: ${followers}
+Following: ${following}
+Location: ${location || "No Location"}
+Account Created: ${moment.utc(created_at).format("dddd, MMMM Do YYYY")}
+Profile: ${html_url}
+Avatar below:`;
+
+    // download avatar image
+    const imgBuffer = (await axios.get(avatar_url, { responseType: "arraybuffer" })).data;
+    const path = __dirname + "/cache/github_avatar.png";
+    fs.writeFileSync(path, Buffer.from(imgBuffer, "binary"));
+
+    api.sendMessage({
+      body: info,
+      attachment: fs.createReadStream(path)
+    }, event.threadID, () => fs.unlinkSync(path), event.messageID);
+
+  } catch (error) {
+    console.error(error);
+    return api.sendMessage(`An error occurred!`, event.threadID, event.messageID);
+  }
+};
