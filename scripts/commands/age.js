@@ -25,5 +25,5 @@ module.exports.run = function ({ api, event, args }) {
 
   const finalAge = isBeforeBirthday ? age - 1 : age;
 
-  api.sendMessage(`𝚈𝙾𝚄𝚁 𝙰𝙶𝙴 𝙸𝚂 ${finalAge} 𝚃𝙰𝙽𝙳𝙰 𝙼𝙾𝙽𝙰 𝙿𝙰𝙻𝙰😝`, event.threadID);
+  api.sendMessage(`তোমার বয়স ${finalAge} বুইড়া 😝`, event.threadID);
 };
