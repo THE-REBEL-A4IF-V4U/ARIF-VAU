@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "siteinfo",
-  version: "1.0.1",
+  version: "1.0.2",
   permission: 0,
   credits: "Rebel",
   description: "View site info from a URL",
@@ -20,29 +20,32 @@ module.exports.run = async ({ api, event, args }) => {
   const request = require('request');
   const fs = require("fs-extra");
 
-  let url = args.join(" ");
-  if (!url) return api.sendMessage("Please provide a site URL.", event.threadID, event.messageID);
+  let siteUrl = args.join(" ");
+  if (!siteUrl) return api.sendMessage("Please provide a site URL.", event.threadID, event.messageID);
 
   try {
-    const response = await axios.get(`https://list.ly/api/v4/meta?url=${encodeURIComponent(url)}`);
-    const { name, description, url: finalUrl, image } = response.data;
+    const res = await axios.get(`https://list.ly/api/v4/meta?url=${encodeURIComponent(siteUrl)}`); // ✅ thik URL
 
-    if (!name && !description && !finalUrl) {
-      return api.sendMessage("No info found for this site!", event.threadID, event.messageID);
-    }
+    const metadata = res.data.metadata;
+    if (!metadata) return api.sendMessage("No metadata found for this site!", event.threadID, event.messageID);
 
-    if (image) {
+    const name = metadata.name || "N/A";
+    const description = metadata.description || "N/A";
+    const finalUrl = metadata.url || siteUrl;
+    const images = metadata.images || [];
+
+    if (images.length > 0) {
       let imgPath = __dirname + `/cache/siteinfo.png`;
-      request(encodeURI(image))
+      request(encodeURI(images[0]))
         .pipe(fs.createWriteStream(imgPath))
         .on("close", () => {
           api.sendMessage({
-            body: `Name: ${name || "N/A"}\n\nDescription: ${description || "N/A"}\n\nURL: ${finalUrl || "N/A"}`,
+            body: `Name: ${name}\n\nDescription: ${description}\n\nURL: ${finalUrl}`,
             attachment: fs.createReadStream(imgPath)
           }, event.threadID, () => fs.unlinkSync(imgPath), event.messageID);
         });
     } else {
-      api.sendMessage(`Name: ${name || "N/A"}\n\nDescription: ${description || "N/A"}\n\nURL: ${finalUrl || "N/A"}`, event.threadID, event.messageID);
+      api.sendMessage(`Name: ${name}\n\nDescription: ${description}\n\nURL: ${finalUrl}`, event.threadID, event.messageID);
     }
   } catch (err) {
     console.error(err);
