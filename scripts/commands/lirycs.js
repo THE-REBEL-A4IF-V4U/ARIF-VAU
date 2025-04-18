@@ -2,14 +2,14 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 module.exports.config = {
-  name: 'Lyrics',
-  version: '1.0.5',
+  name: 'lyrics',
+  version: '3.0.0',
   permission: 0,
-  credits: 'Rebel',
-  description: 'Get song lyrics from Google or Musixmatch.',
+  credits: 'Rebel Modified',
+  description: 'Get lyrics of any song (Bangla, Hindi, English)',
   prefix: false,
   category: 'Music',
-  usages: '/Lyrics [song name]',
+  usages: '/lyrics [song name]',
   cooldowns: 5,
 };
 
@@ -18,41 +18,48 @@ module.exports.run = async function ({ api, event, args }) {
   const query = args.join(' ');
 
   if (!query) {
-    api.sendMessage('Please provide a song name to get lyrics.', threadID, messageID);
-    return;
+    return api.sendMessage('Please provide a song name.', threadID, messageID);
   }
 
   try {
     const headers = { 'User-Agent': 'Mozilla/5.0' };
-    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}+lyrics`;
-    const googleResponse = await axios.get(googleUrl, { headers });
-    const $ = cheerio.load(googleResponse.data);
-    const data = $('div[data-lyricid]');
-    let lyrics, authors;
 
-    if (data.length > 0) {
-      const content = data.html().replace('</span></div><div.*?>', '\n</span>');
-      const parse = cheerio.load(content);
-      lyrics = parse('span[jsname]').text();
-      authors = $('div.auw0zb').text().replace(/(\S+)\s*/g, '$1 ').trim();
-    } else {
-      const musixmatchUrl = `https://www.musixmatch.com/search/${encodeURIComponent(query)}`;
-      const musixmatchResponse = await axios.get(musixmatchUrl, { headers });
-      const mxmMatch = musixmatchResponse.data.match(/<a class="title" href="(.*?)"/);
+    // First try: Google Lyrics Box
+    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}+lyrics`;
+    const googleRes = await axios.get(googleUrl, { headers });
+    const $ = cheerio.load(googleRes.data);
+    const lyricsBox = $('div[data-lyricid]');
+    let lyrics = '';
+    let singer = '';
+
+    if (lyricsBox.length > 0) {
+      const content = lyricsBox.html().replace(/<\/span><\/div><div.*?>/g, '\n');
+      const parsed = cheerio.load(content);
+      lyrics = parsed('span[jsname]').text();
+      singer = $('div.auw0zb').first().text().trim();
+    }
+
+    // If not found on Google, fallback to Musixmatch
+    if (!lyrics || lyrics.length < 10) {
+      const mxmSearchUrl = `https://www.musixmatch.com/search/${encodeURIComponent(query)}`;
+      const mxmSearchRes = await axios.get(mxmSearchUrl, { headers });
+      const mxmMatch = mxmSearchRes.data.match(/<a class="title" href="(\/lyrics\/.*?)"/);
 
       if (mxmMatch) {
-        const mxmUrl = `https://www.musixmatch.com${mxmMatch[1]}`;
-        const mxmResponse = await axios.get(mxmUrl, { headers });
-        lyrics = cheerio.load(mxmResponse.data)('.lyrics__content__ok').text();
-        authors = cheerio.load(mxmResponse.data)('.mxm-track-title__artist-link').text().replace(/(\S+)\s*/g, '$1 ').trim();
+        const mxmLyricsUrl = `https://www.musixmatch.com${mxmMatch[1]}`;
+        const mxmLyricsRes = await axios.get(mxmLyricsUrl, { headers });
+        const $$ = cheerio.load(mxmLyricsRes.data);
+        lyrics = $$('.lyrics__content__ok').text().trim();
+        singer = $$('.mxm-track-title__artist-link').text().trim();
       }
     }
 
     if (lyrics && lyrics.trim() !== '') {
-      api.sendMessage(`🎵 𝗟𝗬𝗥𝗜𝗖𝗦:\n\n${lyrics}\n\n👤 𝗦𝗜𝗡𝗚𝗘𝗥: ${authors || 'unknown'}`, threadID, messageID);
+      api.sendMessage(`🎵 𝗟𝗬𝗥𝗜𝗖𝗦:\n\n${lyrics}\n\n👤 𝗔𝗥𝗧𝗜𝗦𝗧: ${singer || 'Unknown'}`, threadID, messageID);
     } else {
-      api.sendMessage('Sorry, no result found.', threadID, messageID);
+      api.sendMessage('Sorry, no lyrics found.', threadID, messageID);
     }
+
   } catch (error) {
     console.error(error);
     api.sendMessage('An error occurred while fetching lyrics.', threadID, messageID);
