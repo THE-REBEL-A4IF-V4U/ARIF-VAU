@@ -1,55 +1,51 @@
 module.exports.config = {
-  name: "siteinfo", // command name.
-  version: "1.0.0", // command version.
-  permission: 0, // set to 1 for group admins, 2 for bot admins, 3 for bot operators.
-  credits: "Rebel", // credit the creator.
-  description: "View site info from a URL", // command description.
-  prefix: false, // false for no prefix.
-  category: "info", // command category.
-  usages: "[site URL]", // command usage.
-  cooldowns: 5, // command cooldown in seconds.
+  name: "siteinfo",
+  version: "1.0.1",
+  permission: 0,
+  credits: "Rebel",
+  description: "View site info from a URL",
+  prefix: false,
+  category: "info",
+  usages: "[site URL]",
+  cooldowns: 5,
   dependencies: {
-    "axios": "0.21.1", // example package dependency.
-    "request": "2.88.2", // example package dependency.
+    "axios": "",
+    "request": "",
+    "fs-extra": ""
   }
 };
 
 module.exports.run = async ({ api, event, args }) => {
   const axios = require('axios');
   const request = require('request');
-  const fs = require("fs");
-  
-  // Get the URL from the arguments
-  var juswa = args.join(" ");
-  if (!juswa) return api.sendMessage(`Please provide a site URL.`, event.threadID, event.messageID);
+  const fs = require("fs-extra");
 
-  // Make the request to the List.ly API
-  axios.get(`https://list.ly/api/v4/meta?url=${encodeURIComponent(juswa)}`)
-    .then(res => {
-      let a = res.data.name; // Site name
-      let b = res.data.description; // Site description
-      let d = res.data.url; // Site URL
-      let c = res.data.image; // Site image URL
+  let url = args.join(" ");
+  if (!url) return api.sendMessage("Please provide a site URL.", event.threadID, event.messageID);
 
-      let callback = function () {
-        api.sendMessage(
-          {
-            body: `Name: ${a}\n\nDescription: ${b}\n\nUrl: ${d}`,
-            attachment: fs.createReadStream(__dirname + `/cache/leecher.png`)
-          },
-          event.threadID,
-          () => fs.unlinkSync(__dirname + `/cache/leecher.png`), // Clean up after sending the message
-          event.messageID
-        );
-      };
+  try {
+    const response = await axios.get(`https://list.ly/api/v4/meta?url=${encodeURIComponent(url)}`);
+    const { name, description, url: finalUrl, image } = response.data;
 
-      // Download the image from the URL and send it as an attachment
-      request(encodeURI(c))
-        .pipe(fs.createWriteStream(__dirname + `/cache/leecher.png`))
-        .on("close", callback);
-    })
-    .catch(err => {
-      api.sendMessage("An error occurred while fetching the site info.", event.threadID, event.messageID);
-      console.error(err);
-    });
+    if (!name && !description && !finalUrl) {
+      return api.sendMessage("No info found for this site!", event.threadID, event.messageID);
+    }
+
+    if (image) {
+      let imgPath = __dirname + `/cache/siteinfo.png`;
+      request(encodeURI(image))
+        .pipe(fs.createWriteStream(imgPath))
+        .on("close", () => {
+          api.sendMessage({
+            body: `Name: ${name || "N/A"}\n\nDescription: ${description || "N/A"}\n\nURL: ${finalUrl || "N/A"}`,
+            attachment: fs.createReadStream(imgPath)
+          }, event.threadID, () => fs.unlinkSync(imgPath), event.messageID);
+        });
+    } else {
+      api.sendMessage(`Name: ${name || "N/A"}\n\nDescription: ${description || "N/A"}\n\nURL: ${finalUrl || "N/A"}`, event.threadID, event.messageID);
+    }
+  } catch (err) {
+    console.error(err);
+    api.sendMessage("An error occurred while fetching site info.", event.threadID, event.messageID);
+  }
 };
