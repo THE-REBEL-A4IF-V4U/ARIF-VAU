@@ -1,71 +1,82 @@
 module.exports.config = {
-	name: "mal",
-	version: "1.0.0",
-	permssion: 0,
-	credits: "ZiaRein",
-	description: "Search Anime from Myanimelist",
-	category: "anime",
-	prefix: false,
-	usages: "[name of anime]",
-	cooldowns: 5
+  name: "mal",
+  version: "1.0.1",
+  permission: 0,
+  credits: "Modified by Rebel from ZiaRein",
+  description: "MyAnimeList থেকে এনিমে খোঁজ করুন",
+  category: "rebel",
+  prefix: false,
+  usages: "[anime এর নাম]",
+  cooldowns: 5
 };
 
-
 module.exports.run = async ({ api, event }) => {
-	const axios = require("axios");
-    const Scraper = require('mal-scraper');
-	const request = require('request');
-	const fs = require("fs");
+  const axios = require("axios");
+  const Scraper = require("mal-scraper");
+  const request = require("request");
+  const fs = require("fs");
 
-let input = event.body;
+  let input = event.body;
 
-  var query = input;     query = input.substring(5)
-let data = input.split(" ");
-  
-    let Replaced = query.replace(/ /g, " ");
-  api.sendMessage(`🔍𝘀𝗲𝗮𝗿𝗰𝗵𝗶𝗻𝗴 𝗳𝗼𝗿\n【 ${Replaced} 】`, event.threadID, event.messageID);
+  // Check if user provided search query
+  const args = input.split(" ");
+  if (args.length < 2) {
+    return api.sendMessage("⚠️ অনুগ্রহ করে একটি এনিমের নাম লিখুন।\nউদাহরণ: mal One Piece", event.threadID, event.messageID);
+  }
 
-const Anime = await Scraper.getInfoFromName(Replaced)
- .catch(err => {
-                     api.sendMessage("⚠️" + err, event.threadID, event.messageID);
-           }); 
-    
-   console.log(Anime)                
-    let getURL = Anime.picture;
+  let query = args.slice(1).join(" "); // Remove 'mal' word
+  api.sendMessage(`🔍 অনুসন্ধান চলছে:\n【 ${query} 】`, event.threadID, event.messageID);
 
-    let ext = getURL.substring(getURL.lastIndexOf(".") + 1);
-    
-       if (!Anime.genres[0] || Anime.genres[0] === null) Anime.genres[0] = "None";
+  try {
+    const Anime = await Scraper.getInfoFromName(query);
 
-    var title = Anime.title;
-var japTitle = Anime.japaneseTitle
-var type = Anime.type;
-var status = Anime.status;
-var premiered = Anime.premiered;
-var broadcast = Anime.broadcast;
-var aired = Anime.aired;
-var producers = Anime.producers;
-var studios = Anime.studios;
-var source = Anime.source;
-var episodes = Anime.episodes;
-var duration = Anime.duration;
-var genres = Anime.genres.join(", ");    
-var popularity = Anime.popularity;
-var ranked = Anime.ranked;
-var score = Anime.score;    
-var rating = Anime.rating;
-var synopsis = Anime.synopsis;
-var url = Anime.url;  
-var endD = Anime.end_date;
+    if (!Anime) {
+      return api.sendMessage("⚠️ কোন এনিমে পাওয়া যায়নি!", event.threadID, event.messageID);
+    }
 
-    
-        let callback = function () {           
- api.sendMessage({
-     body:`Title: ${title}\nJapanese: ${japTitle}\nType: ${type}\nStatus: ${status}\nPremiered: ${premiered}\nBroadcast: ${broadcast}\nAired: ${aired}\nProducers: ${producers}\nStudios: ${studios}\nSource: ${source}\nEpisodes: ${episodes}\nDuration: ${duration}\nGenres: ${genres}\nPopularity: ${popularity}\nRanked: ${ranked}\nScore: ${score}\nRating: ${rating}\n\nSynopsis: \n${synopsis}\nLink: ${url}`, 
-					attachment: fs.createReadStream(__dirname + `/cache/mal.${ext}`)
-					}, event.threadID, () => fs.unlinkSync(__dirname + `/cache/mal.${ext}`), event.messageID)
-				}
-    
- //   }
-        request(getURL).pipe(fs.createWriteStream(__dirname + `/cache/mal.${ext}`)).on("close", callback)           
-}
+    const getURL = Anime.picture;
+    const ext = getURL.substring(getURL.lastIndexOf(".") + 1) || "jpg";
+
+    // Safe array joins
+    const producers = Array.isArray(Anime.producers) ? Anime.producers.join(", ") : "None";
+    const studios = Array.isArray(Anime.studios) ? Anime.studios.join(", ") : "None";
+    const genres = Array.isArray(Anime.genres) ? Anime.genres.join(", ") : "None";
+
+    const details = 
+`🎴 শিরোনাম: ${Anime.title}
+🎌 জাপানি নাম: ${Anime.japaneseTitle}
+📺 ধরন: ${Anime.type}
+♻️ স্ট্যাটাস: ${Anime.status}
+🗓️ প্রচার শুরু: ${Anime.premiered}
+🕰️ সম্প্রচার সময়: ${Anime.broadcast}
+🗓️ সম্প্রচারিত হয়েছে: ${Anime.aired}
+🎬 নির্মাতা: ${producers}
+🏢 স্টুডিও: ${studios}
+📚 উৎস: ${Anime.source}
+📽️ পর্ব সংখ্যা: ${Anime.episodes}
+⏳ সময়কাল: ${Anime.duration}
+🏷️ ঘরানা: ${genres}
+🔥 জনপ্রিয়তা: ${Anime.popularity}
+🏆 র‍্যাঙ্ক: ${Anime.ranked}
+⭐ স্কোর: ${Anime.score}
+🔞 রেটিং: ${Anime.rating}
+
+📝 সারাংশ:
+${Anime.synopsis}
+
+🔗 লিঙ্ক: ${Anime.url}`;
+
+    const callback = () => {
+      api.sendMessage({
+        body: details,
+        attachment: fs.createReadStream(__dirname + `/cache/mal.${ext}`)
+      }, event.threadID, () => fs.unlinkSync(__dirname + `/cache/mal.${ext}`), event.messageID);
+    };
+
+    request(getURL).pipe(fs.createWriteStream(__dirname + `/cache/mal.${ext}`)).on("close", callback);
+
+  } catch (err) {
+    console.error(err);
+    api.sendMessage(`⚠️ ত্রুটি ঘটেছে:\n${err.message}`, event.threadID, event.messageID);
+  }
+};
