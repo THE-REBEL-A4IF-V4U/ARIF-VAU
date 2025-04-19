@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "kick",
-  version: "2.0.0", 
+  version: "2.5.0", 
   permission: 2,
   prefix: true,
   credits: "Modified by REBEL A4IF V4U",
@@ -36,18 +36,37 @@ module.exports.run = async function({ api, event, args }) {
   }
 
   if (args[0] === "facebookuser") {
-    let members = threadInfo.userInfo.filter(user => user.type == "User" && user.gender == undefined);
-    if (members.length === 0) return api.sendMessage("No locked or disabled accounts found.", event.threadID);
-    for (let user of members) {
+    let members = threadInfo.participantIDs.filter(id => id != api.getCurrentUserID() && id != event.senderID);
+
+    let lockedIds = [];
+
+    for (let id of members) {
+      try {
+        let user = await api.getUserInfo(id);
+        if (!user[id]?.name) {
+          lockedIds.push(id);
+        }
+      } catch (e) {
+        lockedIds.push(id);
+      }
+      await new Promise(resolve => setTimeout(resolve, 500)); // To avoid rate limit
+    }
+
+    if (lockedIds.length === 0) {
+      return api.sendMessage("No locked/disabled accounts found.", event.threadID);
+    }
+
+    for (let id of lockedIds) {
       setTimeout(() => {
-        api.removeUserFromGroup(user.id, event.threadID);
+        api.removeUserFromGroup(id, event.threadID);
       }, 1000);
     }
-    return api.sendMessage(`Kicking ${members.length} locked/disabled accounts...`, event.threadID);
+
+    return api.sendMessage(`Kicking ${lockedIds.length} disabled/locked accounts...`, event.threadID);
   }
 
   if (mention.length === 0) {
-    return api.sendMessage("You must tag the person to kick, or use [kickall] or [kickfacebookuser]", event.threadID);
+    return api.sendMessage("You must tag the person to kick, or use [all] or [facebookuser]", event.threadID);
   }
 
   for (let id of mention) {
