@@ -5,14 +5,14 @@ const path = require("path");
 const crypto = require("crypto");
 
 module.exports.config = {
-  name: `gpt`,
-  version: "1.2.0",
+  name: "gpt",
+  version: "1.2.1",
   permission: 0,
   credits: "Nayan x Optimized by ARIF VAU",
   description: "Chat with GPT-4 or generate AI images dynamically.",
   prefix: false,
   category: "without prefix",
-  usage: `${global.config.BOTNAME} (your prompt or question)`,
+  usage: "gpt (your prompt or question)",
   cooldowns: 5,
   dependency: {
     "axios": "",
@@ -22,9 +22,9 @@ module.exports.config = {
   }
 };
 
-module.exports.run = async function({ nayan, events, args, NAYAN }) {
+module.exports.run = async function({ api, event, args, client, Users, Threads, __GLOBAL }) {
   if (!args.length) {
-    return nayan.reply("❌ Please provide a prompt or question.", events.threadID, events.messageID);
+    return api.sendMessage("❌ দয়া করে একটি প্রশ্ন বা নির্দেশ দিন।", event.threadID, event.messageID);
   }
 
   const prompt = args.join(" ");
@@ -32,7 +32,7 @@ module.exports.run = async function({ nayan, events, args, NAYAN }) {
   const tempImagePath = path.join(__dirname, tempImageName);
 
   try {
-    NAYAN.react("🔍");
+    await api.sendMessage({ body: "🔍 অনুরোধ প্রক্রিয়াকরণ চলছে...", }, event.threadID, event.messageID);
 
     const { data: apiData } = await axios.get('https://raw.githubusercontent.com/MOHAMMAD-NAYAN-07/Nayan/main/api.json');
     const gptApiUrl = apiData.gpt4;
@@ -42,8 +42,7 @@ module.exports.run = async function({ nayan, events, args, NAYAN }) {
     const gptResult = gptResponse.data;
 
     if (gptResult?.response) {
-      NAYAN.react("✔️");
-      return nayan.reply(gptResult.response, events.threadID, events.messageID);
+      return api.sendMessage(gptResult.response, event.threadID, event.messageID);
     } 
 
     if (gptResult?.imgUrl) {
@@ -52,30 +51,25 @@ module.exports.run = async function({ nayan, events, args, NAYAN }) {
 
       await image.writeAsync(tempImagePath);
 
-      const attachment = fs.createReadStream(tempImagePath);
-
-      NAYAN.react("✔️");
-
-      await nayan.sendMessage(
+      await api.sendMessage(
         {
-          body: `🖼️ Here is your generated image based on: "${prompt}"`,
-          attachment,
+          body: `🖼️ এখানে তোমার ছবিটি: "${prompt}"`,
+          attachment: fs.createReadStream(tempImagePath)
         },
-        events.threadID,
-        events.messageID
+        event.threadID,
+        event.messageID
       );
 
-      // Safely delete after sending
+      // ছবির ফাইল ডিলিট করা
       fs.unlink(tempImagePath, (err) => {
         if (err) console.error("[Temp File Delete Error]:", err.message);
       });
     } else {
-      throw new Error("Invalid API response structure.");
+      throw new Error("API থেকে অজানা ফরম্যাটের রেসপন্স এসেছে।");
     }
 
   } catch (error) {
     console.error("[GPT Command Error]:", error.message || error);
-    NAYAN.react("⚠️");
-    nayan.reply("⚠️ Sorry, something went wrong while processing your request.", events.threadID, events.messageID);
+    api.sendMessage("⚠️ দুঃখিত, অনুরোধটি প্রক্রিয়াকরণে সমস্যা হয়েছে।", event.threadID, event.messageID);
   }
 };
