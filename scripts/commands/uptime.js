@@ -2,6 +2,7 @@ const axios = require('axios');
 const request = require('request');
 const fs = require('fs-extra');
 const moment = require('moment-timezone');
+const pidusage = require('pidusage'); // এখানে সরাসরি import করো
 
 module.exports.config = {
   name: "uptime",
@@ -13,7 +14,7 @@ module.exports.config = {
   category: "without prefix",
   usage: "time",
   cooldowns: 3,
-  dependency: { "axios": "", "fs-extra": "" }
+  dependency: { "axios": "", "fs-extra": "", "pidusage": "" } // pidusage dependency যোগ করলাম
 };
 
 module.exports.run = async function({ api, event, args, client, Users, Threads, __GLOBAL, Currencies }) {
@@ -23,7 +24,7 @@ module.exports.run = async function({ api, event, args, client, Users, Threads, 
     const minutes = Math.floor((uptime % (60 * 60)) / 60);
     const seconds = Math.floor(uptime % 60);
 
-    const pidusage = await global.nodemodule["pidusage"](process.pid);
+    const cpuUsage = await pidusage(process.pid);
 
     const quotes = [
       'যে নদীর গভীরতা বেশি, তার বয়ে যাওয়ার শব্দ কম।',
@@ -47,14 +48,17 @@ module.exports.run = async function({ api, event, args, client, Users, Threads, 
     ];
 
     const selectedImage = images[Math.floor(Math.random() * images.length)];
-    const cachePath = __dirname + "/cache/juswa.gif";
+    const cacheFolder = __dirname + "/cache";
+    const cachePath = cacheFolder + "/juswa.gif";
+
+    if (!fs.existsSync(cacheFolder)) fs.mkdirSync(cacheFolder); // যদি cache ফোল্ডার না থাকে বানিয়ে নিবে
 
     const callback = () => {
       api.sendMessage({
         body: `আজকের তারিখ: ${currentTime}\n` +
               `বটের রানিং টাইম: ${hours} ঘন্টা ${minutes} মিনিট ${seconds} সেকেন্ড\n` +
-              `Prefix: ${global.config.PREFIX}\n` +
-              `Bot Name: ${global.config.BOTNAME}\n` +
+              `Prefix: ${global.config?.PREFIX || '!'}\n` +
+              `Bot Name: ${global.config?.BOTNAME || 'MyBot'}\n` +
               `মোট ব্যবহারকারী সংখ্যা: ${global.data.allUserID.length}\n` +
               `মোট গ্রুপ সংখ্যা: ${global.data.allThreadID.length}\n` +
               `Admin Facebook: https://www.facebook.com/THE.R3B3L.ARIF.VAU\n\n` +
