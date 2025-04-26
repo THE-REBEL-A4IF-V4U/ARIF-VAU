@@ -5,7 +5,7 @@ const moment = require('moment-timezone');
 
 module.exports.config = {
   name: "time",
-  version: "1.1.1",
+  version: "1.2.0",
   permission: 0,
   credits: "rebel",
   description: "Show current time and a random quote",
@@ -18,6 +18,7 @@ module.exports.config = {
 
 module.exports.run = async function({ api, event }) {
   try {
+    // Setup
     const quotes = [
       'অনেক কিছু ফিরে আসে কিন্তু সময়কে ফিরিয়ে আনা যায় না ।',
       'আমি তোমাদের বলেছি যে তোমরা মিনিটের খেয়াল রাখো, তাহলে দেখবে ঘন্টাগুলো আপনা থেকেই নিজেদের খেয়াল রাখছে ।',
@@ -46,25 +47,33 @@ module.exports.run = async function({ api, event }) {
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     const randomImage = images[Math.floor(Math.random() * images.length)];
     const currentTime = moment.tz("Asia/Dhaka").format("» তারিখ: D/MM/YYYY «  { সময়: HH:mm:ss }");
+    const filePath = __dirname + "/cache/timeImage.gif";
 
-    const filePath = __dirname + "/cache/juswa.gif";
+    // Download the random image
+    const downloadImage = (url, path) => {
+      return new Promise((resolve, reject) => {
+        request(encodeURI(url))
+          .pipe(fs.createWriteStream(path))
+          .on("finish", resolve)
+          .on("error", reject);
+      });
+    };
 
-    const downloadImage = () => new Promise((resolve, reject) => {
-      request(encodeURI(randomImage))
-        .pipe(fs.createWriteStream(filePath))
-        .on("close", resolve)
-        .on("error", reject);
+    await downloadImage(randomImage, filePath);
+
+    // Send message with attachment
+    await api.sendMessage({
+      body: `~আঁস্সাঁলাঁমুঁ-আলাইকুম🖤\n\nআজকের তারিখ এবং সময়:\n${currentTime}\n\nFacebook Link: https://www.facebook.com/THE.R3B3L.ARIF.VAU\n\n────────────────────\n» ${randomQuote} «\n\n𝙱𝙾𝚃 𝙾𝚆𝙽𝙴𝚁: 𝗔𝗥𝗜𝗙𝗨𝗟 𝗜𝗦𝗟𝗔𝗠 𝗔𝗦𝗜𝗙\n────────────────────`,
+      attachment: fs.createReadStream(filePath)
+    }, event.threadID, () => {
+      // Delete file after sending
+      fs.unlink(filePath, (err) => {
+        if (err) console.error("❌ ফাইল মুছতে সমস্যা হয়েছে:", err);
+      });
     });
 
-    await downloadImage();
-
-    api.sendMessage({
-      body: `~আঁস্সাঁলাঁমুঁ-আলাইকুম🖤 >>\n\nআজকের তারিখ এবং সময়:\n${currentTime}\n\nFacebook Link: https://www.facebook.com/THE.R3B3L.ARIF.VAU\n\n*************************************\n» ${randomQuote} «\n𝙱𝙾𝚃 𝙾𝚆𝙽𝙴𝚁: 𝗔𝗥𝗜𝗙𝗨𝗟 𝗜𝗦𝗟𝗔𝗠 𝗔𝗦𝗜𝗙\n*************************************`,
-      attachment: fs.createReadStream(filePath)
-    }, event.threadID, () => fs.unlinkSync(filePath));
-
   } catch (error) {
-    console.error(error);
-    api.sendMessage("কিছু একটা ভুল হয়েছে। দয়া করে পরে চেষ্টা করুন।", event.threadID);
+    console.error("❌ সময় কমান্ড চালাতে সমস্যা:", error);
+    api.sendMessage("কিছু একটা সমস্যা হয়েছে, পরে আবার চেষ্টা করুন।", event.threadID);
   }
 };
