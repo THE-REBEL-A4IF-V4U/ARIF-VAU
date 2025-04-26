@@ -6,7 +6,7 @@ const crypto = require("crypto");
 
 module.exports.config = {
   name: "gpt",
-  version: "1.2.1",
+  version: "1.2.2",
   permission: 0,
   credits: "Nayan x Optimized by ARIF VAU",
   description: "Chat with GPT-4 or generate AI images dynamically.",
@@ -14,15 +14,10 @@ module.exports.config = {
   category: "without prefix",
   usage: "gpt (your prompt or question)",
   cooldowns: 5,
-  dependency: {
-    "axios": "",
-    "jimp": "",
-    "fs": "",
-    "crypto": ""
-  }
+  dependency: { "axios": "", "jimp": "", "fs": "", "crypto": "" }
 };
 
-module.exports.run = async function({ api, event, args, client, Users, Threads, __GLOBAL }) {
+module.exports.run = async function({ api, event, args }) {
   if (!args.length) {
     return api.sendMessage("❌ দয়া করে একটি প্রশ্ন বা নির্দেশ দিন।", event.threadID, event.messageID);
   }
@@ -32,12 +27,14 @@ module.exports.run = async function({ api, event, args, client, Users, Threads, 
   const tempImagePath = path.join(__dirname, tempImageName);
 
   try {
-    await api.sendMessage({ body: "🔍 অনুরোধ প্রক্রিয়াকরণ চলছে...", }, event.threadID, event.messageID);
+    await api.sendMessage({ body: "🔍 অনুরোধ প্রক্রিয়াকরণ চলছে..." }, event.threadID, event.messageID);
 
+    // Load API URL
     const { data: apiData } = await axios.get('https://raw.githubusercontent.com/MOHAMMAD-NAYAN-07/Nayan/main/api.json');
     const gptApiUrl = apiData.gpt4;
 
-    const { data: gptResponse } = await axios.post(`${gptApiUrl}/gpt4`, { prompt });
+    // Call GPT API
+    const gptResponse = await axios.post(`${gptApiUrl}/gpt4`, { prompt });
 
     const gptResult = gptResponse.data;
 
@@ -57,13 +54,13 @@ module.exports.run = async function({ api, event, args, client, Users, Threads, 
           attachment: fs.createReadStream(tempImagePath)
         },
         event.threadID,
-        event.messageID
+        () => {
+          // Delete temp file after sending
+          fs.unlink(tempImagePath, (err) => {
+            if (err) console.error("[Temp File Delete Error]:", err.message);
+          });
+        }
       );
-
-      // ছবির ফাইল ডিলিট করা
-      fs.unlink(tempImagePath, (err) => {
-        if (err) console.error("[Temp File Delete Error]:", err.message);
-      });
     } else {
       throw new Error("API থেকে অজানা ফরম্যাটের রেসপন্স এসেছে।");
     }
