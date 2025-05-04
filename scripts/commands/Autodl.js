@@ -1,5 +1,6 @@
 const axios = require("axios");
 const fs = require("fs-extra");
+const path = require("path");
 const { rebelaldwn } = require("trs-media-downloader");
 
 module.exports = {
@@ -26,25 +27,28 @@ module.exports = {
         api.setMessageReaction("🔍", event.messageID, () => {}, true);
 
         const result = await rebelaldwn(content);
-        if (!result || typeof result !== "object") {
+        if (!result || typeof result !== "object" || !result.url) {
           throw new Error("Invalid response from downloader.");
         }
 
-        const { url, title, developer, Facebook, WhatsApp } = result;
+        // Handle array or string for video URL
+        const videoUrl = Array.isArray(result.url)
+          ? result.url[0]?.url || result.url[0]
+          : result.url;
 
-        if (!url) {
-          throw new Error("No video URL found in response.");
+        if (!videoUrl) {
+          throw new Error("No valid video URL found.");
         }
 
-        const videoData = (await axios.get(url, { responseType: "arraybuffer" })).data;
-        const filePath = __dirname + "/cache/auto.mp4";
+        const filePath = path.join(__dirname, "cache", "auto.mp4");
+        const videoBuffer = (await axios.get(videoUrl, { responseType: "arraybuffer" })).data;
 
-        fs.writeFileSync(filePath, Buffer.from(videoData));
+        await fs.outputFile(filePath, videoBuffer);
 
         api.setMessageReaction("✔️", event.messageID, () => {}, true);
 
         return api.sendMessage({
-          body: `《TITLE》: ${title || "No title"}\n《Developer》: ${developer}\n《Facebook》: ${Facebook}\n《WhatsApp》: ${WhatsApp}`,
+          body: `VIDEO BY THE REBEL`,
           attachment: fs.createReadStream(filePath)
         }, event.threadID, () => fs.unlinkSync(filePath), event.messageID);
       }
