@@ -73,7 +73,7 @@
         "tesseract.js": "^4.1.1",
         "tinycolor2": "^1.6.0",
         "totp-generator": "^0.0.13",
-        "trs-media-downloader": "^1.0.0",
+        "trs-media-downloader": "^1.0.1",
         "tslib": "^2.6.2",
         "tweetnacl-sealedbox-js": "^1.2.0",
         "tweetnacl-util": "^0.15.1",
