@@ -20,7 +20,7 @@ const body = content.toLowerCase();
 const { rebelaldwn } = require("trs-media-downloader")
 if (body.startsWith("https://")) {
 api.setMessageReaction("🔍", event.messageID, (err) => {}, true);
-const data = await alldown(content);
+const data = await rebelaldwn(content);
 console.log(data)
 const { url, title} = data.data;
 api.setMessageReaction("✔️", event.messageID, (err) => {}, true);
