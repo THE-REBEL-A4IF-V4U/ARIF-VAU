@@ -16,7 +16,7 @@ module.exports = function ({
       allowInbox,
       adminOnly,
       keyAdminOnly
-    } = global.Rebel;
+    } = global.rebel;
 
     const {
       PREFIX,
