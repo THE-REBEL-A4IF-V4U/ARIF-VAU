@@ -4,7 +4,7 @@
     "description": "simple messenger bot",
     "main": "",
     "scripts": {
-        "start": "node node --no-warnings update.js",
+        "start": "node --no-warnings update.js",
         "login": "node login",
         "test": "node --trace-warnings --use_strict --async-stack-traces main"
     },
