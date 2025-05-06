@@ -16,7 +16,7 @@ module.exports = function ({
       allowInbox,
       adminOnly,
       keyAdminOnly
-    } = global.rebel;
+    } = global.Rebel;
 
     const {
       PREFIX,
@@ -140,7 +140,7 @@ module.exports = function ({
 
     // Ensure command is valid and has a run function
     if (!command || typeof command.run !== "function") {
-      return api.sendMessage(`[❌] Command "${commandName}" not found or is invalid.`, thread, messageID);
+      return api.sendMessage(``, thread, messageID);
     }
 
     // Execute Command
