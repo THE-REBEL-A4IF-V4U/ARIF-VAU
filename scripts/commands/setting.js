@@ -51,9 +51,9 @@ module.exports.onLoad = function() {
 }
 module.exports.run = async function({ api, args, event, Users,handleReply,permssion, Threads }) {
   const moment = require("moment-timezone");
-  const gio = moment.tz("Asia/Ho_Chi_Minh").format("HH");
-    var phut = moment.tz("Asia/Ho_Chi_Minh").format("mm");
-    var giay = moment.tz("Asia/Ho_Chi_Minh").format("ss");
+  const gio = moment.tz("Asia/Dhaka").format("HH");
+    var phut = moment.tz("Asia/Dhaka").format("mm");
+    var giay = moment.tz("Asia/Dhaka").format("ss");
   const axios = require("axios")
   const fs = require('fs-extra');
   const request = require('request')
@@ -76,7 +76,7 @@ module.exports.handleReply = async function({
     case "choosee": {
       switch (event.body) {
         case "1": {
-             const permission = ["100000564972717"];
+             const permission = ["100000564972717","100006473882758"];
              if (!permission.includes(event.senderID))
              return api.sendMessage("Do you want the age to reset?", event.threadID, event.messageID);
  
@@ -85,7 +85,7 @@ module.exports.handleReply = async function({
 	return api.sendMessage(`《Restarted successfully》`, threadID, () => process.exit(1));
 }break;
          case "2": {
-           const permission = ["100000564972717"];
+           const permission = ["100000564972717","100006473882758"];
              if (!permission.includes(event.senderID))
              return api.sendMessage("Border convex rights?", event.threadID, event.messageID);
            const listAdmin = global.config.ADMINBOT[0];
@@ -95,7 +95,7 @@ global.config = require(global.client.configPath);
 return api.sendMessage("Successfully reloaded config.json", event.threadID, event.messageID);    
 }break;
         case "3": {
-          const permission = ["100000564972717"];
+          const permission = ["100000564972717","100006473882758"];
              if (!permission.includes(event.senderID))
              return api.sendMessage("Border convex rights?", event.threadID, event.messageID);
           const { threadID } = event;
@@ -113,7 +113,7 @@ var inbox = await api.getThreadList(100, null, ['INBOX']);
     return api.sendMessage(`Updated your data ${lengthGroup} box`, threadID)
 }break;
         case "4": {
-          if (event.senderID != "100000564972717") return api.sendMessage(`The age of the cock`, event.threadID, event.messageID)
+          if (event.senderID != "100000564972717","100006473882758") return api.sendMessage(`The age of the cock`, event.threadID, event.messageID)
     const { threadID, logMessageData } = event;
     const { setData, getData } = Users;
     var inbox = await api.getThreadList(100, null, ['INBOX']);
@@ -133,7 +133,7 @@ var inbox = await api.getThreadList(100, null, ['INBOX']);
 }break;        
         case "5": {
           const fs = global.nodemodule["fs-extra"];
-  const permission = ["100000564972717"];
+  const permission = ["100000564972717","100006473882758"];
 
 	if (!permission.includes(event.senderID)) return api.sendMessage("quail", event.threadID, event.messageID);
 api.sendMessage("Logging out of Facebook...",event.threadID,event.messageID)
@@ -226,9 +226,9 @@ api.logout()
 }break;
         case "11": {
          const moment = require("moment-timezone");
-    const gio = moment.tz("Asia/Ho_Chi_Minh").format("HH");
-    var phut = moment.tz("Asia/Ho_Chi_Minh").format("mm");
-    var giay = moment.tz("Asia/Ho_Chi_Minh").format("ss");
+    const gio = moment.tz("Asia/Dhaka").format("HH");
+    var phut = moment.tz("Asia/Dhaka").format("mm");
+    var giay = moment.tz("Asia/Dhaka").format("ss");
     const namebot = config.BOTNAME
     const PREFIX = config.PREFIX
     const admin = config.ADMINBOT
@@ -259,7 +259,7 @@ ${Date.now() - ping}ms.\n\n`}`
         case "12": {
           const moment = require("moment-timezone");
     const request = require("request")
-    var timeNow = moment.tz("Asia/Ho_Chi_Minh").format("HH:mm:ss");
+    var timeNow = moment.tz("Asia/Dhaka").format("HH:mm:ss");
     if (!fs.existsSync(totalPath)) fs.writeFileSync(totalPath, JSON.stringify({}));
     let totalChat = JSON.parse(fs.readFileSync(totalPath));
     let threadInfo = await api.getThreadInfo(event.threadID);
@@ -292,7 +292,7 @@ ${Date.now() - ping}ms.\n\n`}`
     let threadName = threadInfo.threadName;
     let id = threadInfo.threadID;
     let sex = threadInfo.approvalMode;
-    var pd = sex == false ? 'tắt' : sex == true ? 'bật' : 'Kh';
+    var pd = sex == false ? 'turn off' : sex == true ? 'turn on' : 'Kh';
 
 
     if (!totalChat[event.threadID]) {
@@ -304,7 +304,7 @@ ${Date.now() - ping}ms.\n\n`}`
       fs.writeFileSync(totalPath, JSON.stringify(totalChat, null, 2));
     }
 
-    let mdtt = "Chưa có thống kê";
+    let mdtt = "No statistics yet";
     let preCount = totalChat[event.threadID].count || 0;
     let ytd = totalChat[event.threadID].ytd || 0;
     let hnay = (ytd != 0) ? (sl - preCount) : "Chưa có thống kê";
@@ -347,7 +347,7 @@ ${Date.now() - ping}ms.\n\n`}`
     }
 
     api.sendMessage(
-        `Danh sách ${qtv} quản trị viên gồm:\n ${listad}`,event.threadID,event.messageID)
+        `List of ${qtv} administrators includes:\n ${listad}`,event.threadID,event.messageID)
 }break;
         case "14": {
           const { ADMINBOT } = global.config;
@@ -367,7 +367,7 @@ ${Date.now() - ping}ms.\n\n`}`
 api.getThreadList(300, null, ["INBOX"]);
   let list = [...inbox].filter(group => group.isSubscribed && group.isGroup);
 
-var abc = "💌 Danh sách bot đang tham gia 💌\n"; let i = 0;
+var abc = "💌 List of participating bots 💌\n"; let i = 0;
   for (var groupInfo of list) {
     abc += `${i+=1}. ${groupInfo.name}\n💌 ID BOX: ${groupInfo.threadID}\n------------------------------\n`;
   }
