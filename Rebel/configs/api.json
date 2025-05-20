@@ -2,6 +2,6 @@
   "biblesearch": "https://bible-api.com/",
   "weather": "https://api.openweathermap.org/data/2.5/weather?q=",
   "imagine": "https://image.pollinations.ai",
-"rebel": "https://rebel-api-server-ig5v.onrender.com/api/ask/",
-  "rebelteach": "https://rebel-api-server-ig5v.onrender.com/api/rebel?teach="
+"rebel": "https://rebel-api-server-z7ya.onrender.com/api/ask/",
+  "rebelteach": "https://rebel-api-server-z7ya.onrender.com/api/rebel?teach="
 }
