@@ -16,7 +16,6 @@ module.exports.config = {
   cooldowns: 10,
   dependencies: {
     "fs-extra": "",
-    "request": "",
     "axios": "",
     "yt-search": "",
     "trs-media-downloader": ""
@@ -26,6 +25,7 @@ module.exports.config = {
 module.exports.run = async ({ api, event }) => {
   const input = event.body;
   const data = input.split(" ");
+
   if (data.length < 2) {
     return api.sendMessage("ℹ️ | Please provide a song title.", event.threadID);
   }
@@ -35,8 +35,8 @@ module.exports.run = async ({ api, event }) => {
 
   try {
     api.sendMessage(`🔍 | Searching for "${song}". Please wait...`, event.threadID);
-    const searchResults = await yts(song);
 
+    const searchResults = await yts(song);
     if (!searchResults.videos.length) {
       return api.sendMessage("❎ | No results found.\n\nError: Invalid request.", event.threadID);
     }
@@ -44,15 +44,14 @@ module.exports.run = async ({ api, event }) => {
     const video = searchResults.videos[0];
     const result = await rebelyt(video.url);
 
-    if (!result || !result.audio || !result.audio.url) {
+    if (!result || !result.mp3) {
       return api.sendMessage("❎ | Failed to fetch audio download link.", event.threadID);
     }
 
-    const fileName = `${event.senderID}.mp3`;
-    const filePath = `${__dirname}/cache/${fileName}`;
+    const filePath = `${__dirname}/cache/${event.senderID}.webm`;
 
     const response = await axios({
-      url: result.audio.url,
+      url: result.mp3,
       method: "GET",
       responseType: "stream"
     });
@@ -61,7 +60,8 @@ module.exports.run = async ({ api, event }) => {
     response.data.pipe(writer);
 
     writer.on("finish", () => {
-      if (fs.statSync(filePath).size > 26214400) {
+      const fileSize = fs.statSync(filePath).size;
+      if (fileSize > 26214400) {
         fs.unlinkSync(filePath);
         return api.sendMessage("❎ | File too large to send (limit: 25MB).", event.threadID);
       }
@@ -69,12 +69,11 @@ module.exports.run = async ({ api, event }) => {
       const message = {
         body:
           `♚═════ 𝙼𝚄𝚂𝙸𝙲 ═════♚\n\n` +
-          `🎵 Title: ${video.title}\n` +
-          `🎥 Channel: ${video.author.name}\n` +
-          `🕛 Duration: ${convertHMS(video.seconds)}\n` +
-          `👀 Views: ${video.viewCount}\n` +
-          `❤️ Likes: ${video.likes}\n\n` +
-          `🎧 Music provided by X2💠`,
+          `🎵 Title: ${result.title}\n` +
+          `🎥 Channel: ${result.author}\n` +
+          `📥 Developer: ${result.developer}\n` +
+          `🔗 Facebook: ${result.Facebook}\n` +
+          `📱 WhatsApp: ${result.WhatsApp}`,
         attachment: fs.createReadStream(filePath)
       };
 
@@ -92,16 +91,3 @@ module.exports.run = async ({ api, event }) => {
     api.sendMessage("❎ | An error occurred while processing your request.", event.threadID);
   }
 };
-
-function convertHMS(seconds) {
-  seconds = Number(seconds);
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor((seconds % 3600) % 60);
-
-  const hDisplay = h > 0 ? h + ":" : "";
-  const mDisplay = m < 10 ? "0" + m : m;
-  const sDisplay = s < 10 ? "0" + s : s;
-
-  return hDisplay + mDisplay + ":" + sDisplay;
-}
