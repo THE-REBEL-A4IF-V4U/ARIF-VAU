@@ -1,6 +1,6 @@
 const axios = require('axios');
 const yts = require('yt-search');
-const ytdl = require('ytdl-core');
+const ytdl = require('trs-media-downloader');
 const fs = require('fs');
 const path = require('path');
 
