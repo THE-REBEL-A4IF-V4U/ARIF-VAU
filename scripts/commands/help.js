@@ -5,7 +5,7 @@ const fs = require("fs-extra");
 module.exports.config = {
   name: "help",
   version: "1.1.0",
-  permission: 0,
+  permission: 2,
   credits: "rebel",
   description: "Commands list!",
   prefix: false,
