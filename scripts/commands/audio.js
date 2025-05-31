@@ -1,134 +1,107 @@
-const fs = require('fs-extra');
-const ytdl = require('ytdl-core');
-const Youtube = require('youtube-search-api');
-const axios = require('axios');
-const convertHMS = (value) => new Date(value * 1000).toISOString().slice(11, 19);
+const fs = require("fs-extra");
+const axios = require("axios");
+const yts = require("yt-search");
+const { rebelyt } = require("trs-media-downloader");
 
-const config = {
-    name: "audio",
-    version: "1.0.0",
-    permssion: 0,
-    credits: "Yan Maglinte",
-    description: "Play music via YouTube link or search keyword",
-    prefix: true,
-    category: "Means",
-    usages: "[searchMusic]",
-    cooldowns: 0
+module.exports.config = {
+  name: "music",
+  version: "2.0.4",
+  permission: 0,
+  credits: "Hamim",
+  description: "Play a song",
+  prefix: true,
+  premium: false,
+  category: "media",
+  usages: "[title]",
+  cooldowns: 10,
+  dependencies: {
+    "fs-extra": "",
+    "request": "",
+    "axios": "",
+    "yt-search": "",
+    "trs-media-downloader": ""
+  }
 };
 
-const downloadMusicFromYoutube = async (link, path, itag = 249) => {
-    try {
-        const timestart = Date.now();
-        const data = await ytdl.getInfo(link);
-        const result = {
-            title: data.videoDetails.title,
-            dur: Number(data.videoDetails.lengthSeconds),
-            viewCount: data.videoDetails.viewCount,
-            likes: data.videoDetails.likes,
-            author: data.videoDetails.author.name,
-            timestart: timestart
-        };
+module.exports.run = async ({ api, event }) => {
+  const input = event.body;
+  const data = input.split(" ");
+  if (data.length < 2) {
+    return api.sendMessage("ℹ️ | Please provide a song title.", event.threadID);
+  }
 
-        return new Promise((resolve, reject) => {
-            const stream = ytdl(link, { filter: format => format.itag == itag });
-            const writeStream = fs.createWriteStream(path);
-            stream.pipe(writeStream);
-            writeStream.on('finish', () => {
-                resolve({
-                    data: path,
-                    info: result
-                });
-            });
+  data.shift();
+  const song = data.join(" ");
 
-            stream.on('error', (err) => reject(err));
-        });
-    } catch (e) {
-        console.log(e);
-        throw new Error('Failed to download the audio.');
+  try {
+    api.sendMessage(`🔍 | Searching for "${song}". Please wait...`, event.threadID);
+    const searchResults = await yts(song);
+
+    if (!searchResults.videos.length) {
+      return api.sendMessage("❎ | No results found.\n\nError: Invalid request.", event.threadID);
     }
-};
 
-const handleReply = async ({ api, event, handleReply }) => {
-    try {
-        const path = `${__dirname}/cache/audio-${event.senderID}.mp3`;
-        const { data, info } = await downloadMusicFromYoutube("https://www.youtube.com/watch?v=" + handleReply.link[event.body - 1], path);
+    const video = searchResults.videos[0];
+    const result = await rebelyt(video.url);
 
-        // Check the file size before sending
-        if (fs.statSync(data).size > 26214400) {
-            return api.sendMessage('⚠️The file could not be sent because it is larger than 25MB.', event.threadID, () => fs.unlinkSync(path), event.messageID);
-        }
-
-        api.unsendMessage(handleReply.messageID);
-
-        const message = {
-            body: `❍━━━━━━━━━━━━❍\n🎵 Title: ${info.title}\n⏱️ Duration: ${convertHMS(info.dur)}\n⏱️ Processing time: ${Math.floor((Date.now() - info.timestart) / 1000)} seconds\n❍━━━━━━━━━━━━❍`,
-            attachment: fs.createReadStream(data),
-        };
-
-        return api.sendMessage(message, event.threadID, async () => {
-            fs.unlinkSync(path);
-        }, event.messageID);
-    } catch (error) {
-        console.error(error);
-        return api.sendMessage('⚠️ An error occurred while processing the audio.', event.threadID, event.messageID);
+    if (!result || !result.audio || !result.audio.url) {
+      return api.sendMessage("❎ | Failed to fetch audio download link.", event.threadID);
     }
+
+    const fileName = `${event.senderID}.mp3`;
+    const filePath = `${__dirname}/cache/${fileName}`;
+
+    const response = await axios({
+      url: result.audio.url,
+      method: "GET",
+      responseType: "stream"
+    });
+
+    const writer = fs.createWriteStream(filePath);
+    response.data.pipe(writer);
+
+    writer.on("finish", () => {
+      if (fs.statSync(filePath).size > 26214400) {
+        fs.unlinkSync(filePath);
+        return api.sendMessage("❎ | File too large to send (limit: 25MB).", event.threadID);
+      }
+
+      const message = {
+        body:
+          `♚═════ 𝙼𝚄𝚂𝙸𝙲 ═════♚\n\n` +
+          `🎵 Title: ${video.title}\n` +
+          `🎥 Channel: ${video.author.name}\n` +
+          `🕛 Duration: ${convertHMS(video.seconds)}\n` +
+          `👀 Views: ${video.viewCount}\n` +
+          `❤️ Likes: ${video.likes}\n\n` +
+          `🎧 Music provided by X2💠`,
+        attachment: fs.createReadStream(filePath)
+      };
+
+      api.sendMessage(message, event.threadID, () => fs.unlinkSync(filePath));
+    });
+
+    writer.on("error", (err) => {
+      console.error("[WRITE ERROR]", err);
+      fs.unlinkSync(filePath);
+      api.sendMessage("❎ | Error saving the file.", event.threadID);
+    });
+
+  } catch (error) {
+    console.error('[ERROR]', error);
+    api.sendMessage("❎ | An error occurred while processing your request.", event.threadID);
+  }
 };
 
-const run = async function ({ api, event, args }) {
-    if (!args?.length) return api.sendMessage('❯ Search cannot be empty!', event.threadID, event.messageID);
+function convertHMS(seconds) {
+  seconds = Number(seconds);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor((seconds % 3600) % 60);
 
-    const keywordSearch = args.join(" ");
-    const path = `${__dirname}/cache/sing-${event.senderID}.mp3`;
+  const hDisplay = h > 0 ? h + ":" : "";
+  const mDisplay = m < 10 ? "0" + m : m;
+  const sDisplay = s < 10 ? "0" + s : s;
 
-    if (args[0]?.startsWith("https://")) {
-        try {
-            const { data, info } = await downloadMusicFromYoutube(args[0], path);
-            const body = `❍━━━━━━━━━━━━❍\n🎵 Title: ${info.title}\n⏱️ Duration: ${convertHMS(info.dur)}\n⏱️ Processing time: ${Math.floor((Date.now() - info.timestart) / 1000)} seconds\n❍━━━━━━━━━━━━❍`;
-
-            // Check if file is too large before sending
-            if (fs.statSync(data).size > 26214400) {
-                return api.sendMessage('⚠️ The file is too large to send (over 25MB).', event.threadID, () => fs.unlinkSync(data), event.messageID);
-            }
-
-            return api.sendMessage({ body, attachment: fs.createReadStream(data) }, event.threadID, () => fs.unlinkSync(data), event.messageID);
-        } catch (e) {
-            console.log(e);
-            return api.sendMessage('⚠️ An error occurred while processing the YouTube link.', event.threadID, event.messageID);
-        }
-    } else {
-        try {
-            const data = (await Youtube.GetListByKeyword(keywordSearch, false, 6))?.items ?? [];
-            const link = data.map(value => value?.id);
-            const thumbnails = [];
-
-            for (let i = 0; i < data.length; i++) {
-                const thumbnailUrl = `https://i.ytimg.com/vi/${data[i]?.id}/hqdefault.jpg`;
-                const thumbnailPath = `${__dirname}/cache/thumbnail-${event.senderID}-${i + 1}.jpg`;
-                const response = await axios.get(thumbnailUrl, { responseType: 'arraybuffer' });
-                fs.writeFileSync(thumbnailPath, Buffer.from(response.data, 'binary'));
-                thumbnails.push(fs.createReadStream(thumbnailPath));
-            }
-
-            const body = `There are ${link.length} results matching your search keyword:\n\n${data.map((value, index) => `❍━━━━━━━━━━━━❍\n${index + 1} - ${value?.title} (${value?.length?.simpleText})\n\n`).join('')}❯ Please reply and select one of the above searches`;
-
-            return api.sendMessage({ attachment: thumbnails, body }, event.threadID, (error, info) => {
-                for (let i = 0; i < thumbnails.length; i++) {
-                    fs.unlinkSync(`${__dirname}/cache/thumbnail-${event.senderID}-${i + 1}.jpg`);
-                }
-
-                global.client.handleReply.push({
-                    type: 'reply',
-                    name: config.name,
-                    messageID: info.messageID,
-                    author: event.senderID,
-                    link
-                });
-            }, event.messageID);
-        } catch (e) {
-            console.log(e);
-            return api.sendMessage(`⚠️An error occurred, please try again in a moment!!\n${e}`, event.threadID, event.messageID);
-        }
-    }
-};
-
-module.exports = { config, run, handleReply };
+  return hDisplay + mDisplay + ":" + sDisplay;
+}
