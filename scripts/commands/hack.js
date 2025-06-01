@@ -1,7 +1,7 @@
 module.exports.config = {
   name: "hack", 
   version: "1.0.0", 
-  permission: 2,
+  permission: 0,
   credits: "Nayan",
   description: "example",
   prefix: true,
@@ -57,7 +57,7 @@ module.exports.run = async function ({ args, Users, Threads, api, event, Currenc
   
   var background = [
 
-    "https://i.postimg.cc/qMQf3pv1/download.png"
+    "https://drive.google.com/uc?id=1RwJnJTzUmwOmP3N_mZzxtp63wbvt9bLZ"
 ];
   var rd = background[Math.floor(Math.random() * background.length)];
   
@@ -101,4 +101,4 @@ module.exports.run = async function ({ args, Users, Threads, api, event, Currenc
       event.threadID,
       () => fs.unlinkSync(pathImg),
       event.messageID);
-    }
+}
