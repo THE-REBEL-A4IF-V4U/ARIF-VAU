@@ -1,8 +1,8 @@
 module.exports.config = {
   name: "music",
   version: "2.0.4",
-  permssion: 0,
-  credits: "Hamim & Fixed by Rebel",
+  permission: 0,
+  credits: " Fixed by Rebel",
   description: "Play a song",
   prefix: true,
   premium: false,
@@ -13,15 +13,14 @@ module.exports.config = {
     "fs-extra": "",
     "request": "",
     "axios": "",
-    "@distube/ytdl-core": "",
+    "trs-media-downloader": "",
     "yt-search": ""
   }
 };
 
 module.exports.run = async ({ api, event }) => {
-  const axios = require("axios");
   const fs = require("fs-extra");
-  const ytdl = require("@distube/ytdl-core");
+  const rebelyt = require("trs-media-downloader");
   const request = require("request");
   const yts = require("yt-search");
 
@@ -43,26 +42,21 @@ module.exports.run = async ({ api, event }) => {
     }
 
     const video = searchResults.videos[0];
-    const stream = ytdl(video.url, {
-      filter: "audioonly",
-      quality: "highestaudio",
-      highWaterMark: 1 << 25,
-      requestOptions: {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/90.0.4430.212 Safari/537.36",
-          "Accept-Language": "en-US,en;q=0.9"
-        }
-      }
-    });
+    const url = video.url;
+
+    const result = await rebelyt.rebelyt(url);
+    const audioUrl = result?.mp3;
+
+    if (!audioUrl) {
+      return api.sendMessage("❌ | Failed to retrieve MP3 link.", event.threadID);
+    }
 
     const fileName = `${event.senderID}.mp3`;
     const filePath = __dirname + `/cache/${fileName}`;
-    const writeStream = fs.createWriteStream(filePath);
 
-    stream.pipe(writeStream);
+    const audioStream = request(audioUrl).pipe(fs.createWriteStream(filePath));
 
-    writeStream.on("finish", async () => {
+    audioStream.on("finish", async () => {
       const fileSize = fs.statSync(filePath).size;
       if (fileSize > 26214400) {
         fs.unlinkSync(filePath);
@@ -70,17 +64,18 @@ module.exports.run = async ({ api, event }) => {
       }
 
       const msg = {
-        body: `🎶 | Title: ${video.title}\n📺 | Channel: ${video.author.name}\n👁 | Views: ${video.views}\n⏱ | Duration: ${video.timestamp}`,
+        body: `🎶 | Title: ${result.title}\n📺 | Channel: ${result.author}\n🔗 | Source: ${video.url}`,
         attachment: fs.createReadStream(filePath)
       };
 
       api.sendMessage(msg, event.threadID, () => fs.unlinkSync(filePath));
     });
 
-    writeStream.on("error", (err) => {
-      console.error("WriteStream Error:", err);
+    audioStream.on("error", (err) => {
+      console.error("Audio Stream Error:", err);
       api.sendMessage("❌ | Error saving the audio file.", event.threadID);
     });
+
   } catch (err) {
     console.error("Music Command Error:", err);
     api.sendMessage("❌ | Failed to fetch or download the audio.", event.threadID);
