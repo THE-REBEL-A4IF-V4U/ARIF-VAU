@@ -1,85 +1,147 @@
+const fs = require('fs');
 const axios = require("axios");
-const fs = require("fs-extra");
-const ytdl = require("@distube/ytdl-core");
-const yts = require("yt-search");
+const { resolve } = require('path');
+const { createReadStream, unlinkSync, statSync } = require("fs-extra");
+
+async function downloadMusicFromYoutube(link, path) {
+  if (!link) return 'Link Not Found';
+  const timestart = Date.now();
+
+  try {
+    const res = await axios.get("https://raw.githubusercontent.com/MOHAMMAD-NAYAN-07/Nayan/main/api.json");
+    const api = res.data.down_stream;
+
+    const encodedLink = encodeURIComponent(link);
+    const data = await axios.get(`${api}/nayan/yt?url=${encodedLink}`);
+    const audioUrl = data.data.data.audio_down;
+
+    return new Promise((resolve, reject) => {
+      axios({
+        method: 'get',
+        url: audioUrl,
+        responseType: 'stream'
+      }).then(response => {
+        const writeStream = fs.createWriteStream(path);
+        response.data.pipe(writeStream)
+          .on('finish', async () => {
+            try {
+              const info = await axios.get(`${api}/nayan/yt?url=${encodedLink}`);
+              const result = {
+                title: info.data.data.title,
+                timestart: timestart
+              };
+              resolve(result);
+            } catch (error) {
+              reject(error);
+            }
+          })
+          .on('error', (error) => {
+            reject(error);
+          });
+      }).catch(error => {
+        reject(error);
+      });
+    });
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
 
 module.exports.config = {
-  name: "music",
-  version: "2.0.4",
-  permssion: 0,
+  name: "song",
+  version: "1.0.0",
+  permission: 0,
+  credits: "Nayan",
+  description: "Download song from YouTube",
   prefix: true,
-  credits: "DRIDI-RAYEN - Converted by ChatGPT",
-  description: "আপনার পছন্দের গান চালান",
-  category: "🔍 অনুসন্ধান",
-  usages: "[গানের নাম]",
-  cooldowns: 10,
-  dependencies: {
-    "fs-extra": "",
-    "request": "",
-    "axios": "",
-    "ytdl-core": "",
-    "yt-search": ""
+  category: "Media",
+  usages: "song <YouTube link or keywords>",
+  cooldowns: 5
+};
+
+module.exports.handleReply = async function ({ api, event, handleReply }) {
+  try {
+    const path = `${__dirname}/cache/1.mp3`;
+    const link = 'https://www.youtube.com/watch?v=' + handleReply.link[event.body - 1];
+    const data = await downloadMusicFromYoutube(link, path);
+
+    if (fs.statSync(path).size > 26214400) {
+      return api.sendMessage('The file cannot be sent because it is larger than 25MB.', event.threadID, () => fs.unlinkSync(path), event.messageID);
+    }
+
+    api.unsendMessage(handleReply.messageID);
+    return api.sendMessage({
+      body: `🎵 Title: ${data.title}\n⏱️ Processing time: ${Math.floor((Date.now() - data.timestart) / 1000)}s\n💿====DISME PROJECT====💿`,
+      attachment: fs.createReadStream(path)
+    }, event.threadID, () => fs.unlinkSync(path), event.messageID);
+  } catch (e) {
+    console.log(e);
   }
 };
 
-module.exports.run = async ({ api, event }) => {
-  const input = event.body;
-  const args = input.split(" ");
+module.exports.convertHMS = function (value) {
+  const sec = parseInt(value, 10);
+  let hours = Math.floor(sec / 3600);
+  let minutes = Math.floor((sec - (hours * 3600)) / 60);
+  let seconds = sec - (hours * 3600) - (minutes * 60);
 
-  if (args.length < 2) {
-    return api.sendMessage("⚠️ অনুগ্রহ করে একটি গানের নাম লিখুন!", event.threadID, event.messageID);
+  if (hours < 10) hours = "0" + hours;
+  if (minutes < 10) minutes = "0" + minutes;
+  if (seconds < 10) seconds = "0" + seconds;
+
+  return (hours != '00' ? hours + ':' : '') + minutes + ':' + seconds;
+};
+
+module.exports.run = async function ({ api, event, args }) {
+  if (!args.length) {
+    return api.sendMessage('» উফফ আবাল কি গান শুনতে চাস তার ২/১ লাইন তো লেখবি নাকি 🥵 empty!', event.threadID, event.messageID);
   }
 
-  args.shift();
-  const songName = args.join(" ");
+  const keywordSearch = args.join(" ");
+  const path = `${__dirname}/cache/1.mp3`;
 
-  try {
-    const infoMsg = await api.sendMessage(`🔍 গান খোঁজা হচ্ছে: 『${songName}』\nঅনুগ্রহ করে অপেক্ষা করুন...`, event.threadID);
+  if (fs.existsSync(path)) {
+    fs.unlinkSync(path);
+  }
 
-    const searchResults = await yts(songName);
-    if (!searchResults.videos.length) {
-      return api.sendMessage("❌ কোনো ফলাফল পাওয়া যায়নি।", event.threadID, event.messageID);
-    }
+  if (args.join(" ").startsWith("https://")) {
+    try {
+      const data = await downloadMusicFromYoutube(args.join(" "), path);
 
-    const video = searchResults.videos[0];
-    const videoUrl = video.url;
-
-    const stream = ytdl(videoUrl, { filter: "audioonly" });
-
-    const fileName = `${event.senderID}.mp3`;
-    const filePath = `${__dirname}/cache/${fileName}`;
-
-    stream.pipe(fs.createWriteStream(filePath));
-
-    stream.on('response', () => {
-      console.log('[DOWNLOADER] গান ডাউনলোড শুরু হয়েছে...');
-    });
-
-    stream.on('info', (info) => {
-      console.log('[DOWNLOADER]', `Downloading: ${info.videoDetails.title} by ${info.videoDetails.author.name}`);
-    });
-
-    stream.on('end', () => {
-      console.log('[DOWNLOADER] গান ডাউনলোড সম্পন্ন হয়েছে।');
-
-      if (fs.statSync(filePath).size > 26214400) {
-        fs.unlinkSync(filePath);
-        return api.sendMessage('❌ ফাইলটি ২৫MB এর বেশি হওয়ায় পাঠানো যাচ্ছে না।', event.threadID);
+      if (fs.statSync(path).size > 26214400) {
+        return api.sendMessage('Unable to send file because it is larger than 25MB.', event.threadID, () => fs.unlinkSync(path), event.messageID);
       }
 
-      const message = {
-        body: `✅ আপনার গানটি ডাউনলোড করা হয়েছে:\n\n🎶 শিরোনাম: ${video.title}\n👤 শিল্পী: ${video.author.name}`,
-        attachment: fs.createReadStream(filePath)
-      };
+      return api.sendMessage({
+        body: `🎵 Title: ${data.title}\n⏱️ Processing time: ${Math.floor((Date.now() - data.timestart) / 1000)}s\n💿====DISME PROJECT====💿`,
+        attachment: fs.createReadStream(path)
+      }, event.threadID, () => fs.unlinkSync(path), event.messageID);
+    } catch (e) {
+      return console.log(e);
+    }
+  } else {
+    try {
+      const link = [], msg = [];
+      const Youtube = require('youtube-search-api');
+      const results = (await Youtube.GetListByKeyword(keywordSearch, false, 6)).items;
 
-      api.unsendMessage(infoMsg.messageID);
-      api.sendMessage(message, event.threadID, () => {
-        fs.unlinkSync(filePath);
+      results.forEach((video, index) => {
+        link.push(video.id);
+        msg.push(`${index + 1} - ${video.title} (${video.length.simpleText})\n`);
       });
-    });
 
-  } catch (error) {
-    console.error('[ERROR]', error);
-    api.sendMessage('❗ একটি ত্রুটি ঘটেছে, অনুগ্রহ করে পরে আবার চেষ্টা করুন।', event.threadID);
+      const body = `»🔎 Found ${link.length} results for your search:\n\n${msg.join('')}» Reply with the number to download.`;
+      return api.sendMessage({ body }, event.threadID, (err, info) => {
+        global.client.handleReply.push({
+          type: 'reply',
+          name: this.config.name,
+          messageID: info.messageID,
+          author: event.senderID,
+          link
+        });
+      }, event.messageID);
+    } catch (e) {
+      return api.sendMessage('❌ An error occurred. Try again later!\n' + e.message, event.threadID, event.messageID);
+    }
   }
 };
