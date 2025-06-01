@@ -211,15 +211,20 @@ module.exports = function (defaultFuncs, api, ctx) {
       uploadAttachment(msg.attachment, function (err, files) {
         if (err) return callback(err);
         files.forEach(function (file) {
-          var key = Object.keys(file);
-          var type = key[0]; // image_id, file_id, etc
-          form["" + type + "s"].push(file[type]); // push the id
-        });
-        cb();
-      });
-    }
-    else cb();
+  if (!file || typeof file !== "object") {
+    log.warn("uploadAttachment", "Received invalid file data:", file);
+    return; // Skip this invalid file
   }
+
+  var key = Object.keys(file);
+  var type = key[0]; // image_id, file_id, etc
+  if (!form[type + "s"]) {
+    log.warn("uploadAttachment", `Unexpected attachment type: ${type}`);
+    return;
+  }
+
+  form[type + "s"].push(file[type]); // push the id
+});
 
   function handleMention(msg, form, callback, cb) {
     if (msg.mentions) {
