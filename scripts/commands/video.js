@@ -1,165 +1,149 @@
+const fs = require("fs-extra");
+const axios = require("axios");
+const ytdl = require("ytdl-core");
+const YouTubeAPI = require("simple-youtube-api");
+
 module.exports.config = {
   name: "video",
-  version: "1.0.0",
+  version: "1.0.1",
   permssion: 0,
-  credits: "CatalizCS mod video by Đăng",
-  description: "Play video from YouTube",
+  credits: "CatalizCS mod by Đăng - fixed by THE REBEL",
+  description: "Play or search YouTube videos",
   prefix: true,
   category: "music",
-  usages: "video [Text]",
+  usages: "video [name or YouTube link]",
   cooldowns: 10,
   dependencies: {
-    "@distube/ytdl-core": "",
+    "ytdl-core": "",
     "simple-youtube-api": "",
     "fs-extra": "",
     "axios": ""
   },
   envConfig: {
-    "YOUTUBE_API": "AIzaSyDEE1-zZSRVI8lTaQOVsIAQFgL-_BJKvhk"
+    YOUTUBE_API: "AIzaSyDEE1-zZSRVI8lTaQOVsIAQFgL-_BJKvhk"
   }
 };
- 
-module.exports.handleReply = async function({ api, event, handleReply }) {
-  const ytdl = global.nodemodule["@distube/ytdl-core"];
-  const { createReadStream, createWriteStream, unlinkSync, statSync } = global.nodemodule["fs-extra"];
-  ytdl.getInfo(handleReply.link[event.body - 1]).then(res => {
-    let body = res.videoDetails.title;
-    api.sendMessage(`Downloading Video!\n❍━━━━━━━━━━━━❍\n${body}\n❍━━━━━━━━━━━━❍\nThis may take a while!`, event.threadID, (err, info) =>
-      setTimeout(() => { api.unsendMessage(info.messageID) }, 100000));
-  });
+
+module.exports.handleReply = async ({ api, event, handleReply }) => {
   try {
-    ytdl.getInfo(handleReply.link[event.body - 1]).then(res => {
-      let body = res.videoDetails.title;
-      ytdl(handleReply.link[event.body - 1])
-        .pipe(createWriteStream(__dirname + `/cache/${handleReply.link[event.body - 1]}.mp4`))
-        .on("close", () => {
-          if (statSync(__dirname + `/cache/${handleReply.link[event.body - 1]}.mp4`).size > 26214400) return api.sendMessage('The file could not be sent because it is larger than 25MB.', event.threadID, () => unlinkSync(__dirname + `/cache/${handleReply.link[event.body - 1]}.mp4`), event.messageID);
-          else return api.sendMessage({ body: `${body}`, attachment: createReadStream(__dirname + `/cache/${handleReply.link[event.body - 1]}.mp4`) }, event.threadID, () => unlinkSync(__dirname + `/cache/${handleReply.link[event.body - 1]}.mp4`), event.messageID)
-        })
-        .on("error", (error) => api.sendMessage(`There was a problem while processing the request, error: \n${error}`, event.threadID, event.messageID));
-    });
+    const index = parseInt(event.body) - 1;
+    const videoId = handleReply.link[index];
+    const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`);
+    const title = info.videoDetails.title;
+    const filePath = `${__dirname}/cache/${videoId}.mp4`;
+
+    api.sendMessage(`⬇ Downloading: ${title}\nThis may take a few moments...`, event.threadID);
+
+    ytdl(`https://www.youtube.com/watch?v=${videoId}`, { quality: "18" }) // MP4 360p
+      .pipe(fs.createWriteStream(filePath))
+      .on("close", () => {
+        const stats = fs.statSync(filePath);
+        if (stats.size > 26214400) {
+          fs.unlinkSync(filePath);
+          return api.sendMessage("❌ Video too large (over 25MB) to send.", event.threadID);
+        }
+        return api.sendMessage(
+          { body: title, attachment: fs.createReadStream(filePath) },
+          event.threadID,
+          () => fs.unlinkSync(filePath)
+        );
+      })
+      .on("error", error => {
+        console.error(error);
+        api.sendMessage("❌ Failed to download video.", event.threadID);
+      });
+
+  } catch (err) {
+    console.error(err);
+    api.sendMessage("❌ Could not process your request.", event.threadID);
   }
-  catch {
-    api.sendMessage("Your request could not be processed!", event.threadID, event.messageID);
-  }
-  return api.unsendMessage(handleReply.messageID);
-}
- 
-module.exports.run = async function({ api, event, args }) {
-  const ytdl = global.nodemodule["ytdl-core"];
-  const YouTubeAPI = global.nodemodule["simple-youtube-api"];
-  const { createReadStream, createWriteStream, unlinkSync, statSync } = global.nodemodule["fs-extra"];
- 
-  const youtube = new YouTubeAPI(global.configModule[this.config.name].YOUTUBE_API);
-  const keyapi = global.configModule[this.config.name].YOUTUBE_API
- 
-  if (args.length == 0 || !args) return api.sendMessage('Search cannot be left blank!', event.threadID, event.messageID);
-  const keywordSearch = args.join(" ");
-  const videoPattern = /^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+/gm;
-  const urlValid = videoPattern.test(args[0]);
- 
-  if (urlValid) {
+};
+
+module.exports.run = async ({ api, event, args }) => {
+  const youtube = new YouTubeAPI(module.exports.config.envConfig.YOUTUBE_API);
+
+  if (!args[0]) return api.sendMessage("❌ Please enter a search query or YouTube link.", event.threadID);
+
+  const keyword = args.join(" ");
+  const videoRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+
+  // Direct video URL
+  if (videoRegex.test(keyword)) {
     try {
-      var id = args[0].split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
-      (id[2] !== undefined) ? id = id[2].split(/[^0-9a-z_\-]/i)[0] : id = id[0];
-      ytdl(args[0])
-        .pipe(createWriteStream(__dirname + `/cache/${id}.mp4`))
+      const id = ytdl.getURLVideoID(keyword);
+      const info = await ytdl.getInfo(id);
+      const title = info.videoDetails.title;
+      const filePath = `${__dirname}/cache/${id}.mp4`;
+
+      api.sendMessage(`⬇ Downloading: ${title}`, event.threadID);
+
+      ytdl(keyword, { quality: "18" })
+        .pipe(fs.createWriteStream(filePath))
         .on("close", () => {
-          if (statSync(__dirname + `/cache/${id}.mp4`).size > 26214400) return api.sendMessage('The file could not be sent because it is larger than 25MB.', event.threadID, () => unlinkSync(__dirname + `/cache/${id}.mp4`), event.messageID);
-          else return api.sendMessage({ attachment: createReadStream(__dirname + `/cache/${id}.mp4`) }, event.threadID, () => unlinkSync(__dirname + `/cache/${id}.mp4`), event.messageID)
+          const stats = fs.statSync(filePath);
+          if (stats.size > 26214400) {
+            fs.unlinkSync(filePath);
+            return api.sendMessage("❌ Video too large (over 25MB).", event.threadID);
+          }
+          return api.sendMessage(
+            { body: title, attachment: fs.createReadStream(filePath) },
+            event.threadID,
+            () => fs.unlinkSync(filePath)
+          );
         })
-        .on("error", (error) => api.sendMessage(`There was a problem while processing the request, error: \n${error}`, event.threadID, event.messageID));
+        .on("error", err => {
+          console.error(err);
+          api.sendMessage("❌ Error downloading the video.", event.threadID);
+        });
+    } catch (err) {
+      console.error(err);
+      api.sendMessage("❌ Failed to download video.", event.threadID);
     }
-    catch {
-      api.sendMessage("Your request could not be processed!", event.threadID, event.messageID);
-    }
- 
-  }
-  else {
+
+  } else {
+    // Search mode
     try {
-      var link = [], msg = "", num = 0, numb = 0;
-      var imgthumnail = [];
-      var results = await youtube.searchVideos(keywordSearch, 6);
-      for (let value of results) {
-        if (typeof value.id == 'undefined') return;
-        link.push(value.id);
-        var idd = value.id;
-        let datab = (await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${value.id}&key=${keyapi}`)).data;
-        let gettime = datab.items[0].contentDetails.duration;
-        let time = (gettime.slice(2));
-        /////////////////////
-        let datac = (await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${value.id}&key=${keyapi}`)).data;
-        let channel = datac.items[0].snippet.channelTitle;
-        let folderthumnail = __dirname + `/cache/${numb += 1}.png`;
- 
-        let linkthumnail = `https://img.youtube.com/vi/${value.id}/maxresdefault.jpg`;
- 
-        let getthumnail = (await axios.get(`${linkthumnail}`, { responseType: 'arraybuffer' })).data;
- 
-        fs.writeFileSync(folderthumnail, Buffer.from(getthumnail, 'utf-8'));
- 
-        imgthumnail.push(fs.createReadStream(__dirname + `/cache/${numb}.png`));
-        /////=//////////////
-        msg += (`${num += 1}. ${value.title}\nTime: ${time}\nChannel: ${channel}\n❍━━━━━━━━━━━━❍\n`);
+      const results = await youtube.searchVideos(keyword, 6);
+      if (!results.length) return api.sendMessage("❌ No results found.", event.threadID);
+
+      let message = `🎬 Found ${results.length} results:\n\n`;
+      const videoLinks = [];
+      const attachments = [];
+
+      let count = 1;
+      for (const video of results) {
+        videoLinks.push(video.id);
+        const thumbUrl = `https://img.youtube.com/vi/${video.id}/hqdefault.jpg`;
+        const thumbPath = `${__dirname}/cache/thumb${count}.jpg`;
+
+        const thumb = (await axios.get(thumbUrl, { responseType: "arraybuffer" })).data;
+        fs.writeFileSync(thumbPath, Buffer.from(thumb, "utf-8"));
+        attachments.push(fs.createReadStream(thumbPath));
+
+        message += `${count}. ${video.title}\nChannel: ${video.channel.title}\n❍━━━━━━━━━━━━❍\n`;
+        count++;
       }
- 
-      var body = `There are ${link.length} results matching your search keyword:\n\n${msg}\nPlease reply(feedback) choose one of the above searches`
- 
-      return api.sendMessage({ attachment: imgthumnail, body: body }, event.threadID, (error, info) => global.client.handleReply.push({
-        name: this.config.name,
-        messageID: info.messageID,
-        author: event.senderID,
-        link
-      }),
-        event.messageID);
- 
-    }
-    catch (error) {
-      //api.sendMessage("Không thể xử lý request do dã phát sinh lỗi: " + error.message, event.threadID, event.messageID);
- 
-      const fs = global.nodemodule["fs-extra"];
-      const axios = global.nodemodule["axios"];
-      var link = [], msg = "", num = 0, numb = 0;
-      var imgthumnail = []
-      var results = await youtube.searchVideos(keywordSearch, 6);
-      for (let value of results) {
-        if (typeof value.id == 'undefined') return;
-        link.push(value.id);
-        var idd = value.id;
-        let folderthumnail = __dirname + `/cache/${numb += 1}.png`;
- 
-        let linkthumnail = `https://img.youtube.com/vi/${value.id}/hqdefault.jpg`;
- 
-        let getthumnail = (await axios.get(`${linkthumnail}`, { responseType: 'arraybuffer' })).data;
- 
- 
- 
-        ////////////////////
-        let datab = (await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${value.id}&key=${keyapi}`)).data;
-        let gettime = datab.items[0].contentDetails.duration;
-        let time = (gettime.slice(2));
-        ///////////////////
-        let datac = (await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${value.id}&key=${keyapi}`)).data;
-        let channel = datac.items[0].snippet.channelTitle;
- 
-        fs.writeFileSync(folderthumnail, Buffer.from(getthumnail, 'utf-8'));
- 
-        imgthumnail.push(fs.createReadStream(__dirname + `/cache/${numb}.png`));
-        /////=//////////////
-        msg += (`${num += 1}. ${value.title}\nTime: ${time}\nChannel: ${channel}\n❍━━━━━━━━━━━━❍\n`);
-      }
- 
-      var body = `There are ${link.length} results matching your search keyword:\n\n${msg}\nPlease reply(feedback) choose one of the above searches`
-      return api.sendMessage({ attachment: imgthumnail, body: body }, event.threadID, (error, info) => global.client.handleReply.push({
-        name: this.config.name,
-        messageID: info.messageID,
-        author: event.senderID,
-        link
-      }),
-        event.messageID);
+
+      api.sendMessage(
+        {
+          body: message + "\n💬 Reply with the number to download.",
+          attachment: attachments
+        },
+        event.threadID,
+        (err, info) => {
+          if (err) console.error(err);
+          global.client.handleReply.push({
+            name: module.exports.config.name,
+            messageID: info.messageID,
+            author: event.senderID,
+            link: videoLinks
+          });
+        }
+      );
+
+    } catch (err) {
+      console.error(err);
+      api.sendMessage("❌ Failed to search videos.", event.threadID);
     }
   }
-  for (let ii = 1; ii < 7; ii++) {
-    unlinkSync(__dirname + `/cache/${ii}.png`)
-  }
-}
+};
