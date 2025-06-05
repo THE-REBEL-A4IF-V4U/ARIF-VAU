@@ -1,6 +1,7 @@
 {  
   "author": "ARIF VAU",
   "autoRestart": true,
+  "autoCreateDB": false,
   "accpetPending": false,
   "developermode": false,
   "language": "en",
