@@ -6,7 +6,7 @@
   "developermode": false,
   "language": "en",
   "notification": false,
-  "approval": false,
+  "approval": true,
   "saveState": true,
   "banMsg": false,
   "adminOnlyMsg": false,
@@ -16,12 +16,14 @@
     "100006473882758",
     "100000564972717",
     "61560361797366",
-    "100009551241662"
+    "100009551241662",
+    "100000619151193"
   ],
   "ADMINBOT": [
     "100006473882758",
     "61560361797366",
-    "100009551241662"
+    "100009551241662",
+    "100000619151193"
   ],
   "OWNER": ["100006473882758"], 
   "APPROVED": [],
