@@ -1,7 +1,7 @@
 module.exports.config = {
   name: "grpsts",
   version: "1.0.0",
-  Permssion: 0,
+  Permssion: 2,
   credits: "THE REBEL",
   description: "Get User Information.",
   prefix: false,
