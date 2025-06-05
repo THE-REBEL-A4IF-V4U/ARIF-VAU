@@ -1,58 +1,66 @@
 const axios = require("axios");
 
 module.exports.config = {
-	name: "adduser",
-	version: "1.0.2",
-	permssion: 0,
-	credits: "Yan Maglinte + Modified by THE REBEL",
-	description: "Add user to group by UID or FB profile link",
-	prefix: true,
-	category: "group",
-	usages: "[uid/link]",
-	cooldowns: 5
+  name: "adduser",
+  version: "1.0.2",
+  permssion: 0,
+  credits: "Yan Maglinte + Modified by THE REBEL",
+  description: "Add user to group by ID or profile link",
+  prefix: true,
+  category: "group",
+  usages: "[uid or profile link]",
+  cooldowns: 5
 };
 
 module.exports.run = async function ({ api, event, args }) {
-	const { threadID, messageID } = event;
-	const botID = api.getCurrentUserID();
-	const send = msg => api.sendMessage(msg, threadID, messageID);
+  const { threadID, messageID } = event;
+  const botID = api.getCurrentUserID();
+  const out = msg => api.sendMessage(msg, threadID, messageID);
 
-	let { participantIDs, approvalMode, adminIDs } = await api.getThreadInfo(threadID);
-	participantIDs = participantIDs.map(e => parseInt(e));
-	const admins = adminIDs.map(e => parseInt(e.id));
+  if (!args[0]) return out("⚠️ Please provide a UID or Facebook profile link to add.");
 
-	if (!args[0]) return send("⚠️ Please provide a UID or Facebook profile link.");
+  let uid;
 
-	let uid, name = null;
+  // If it's a numeric UID
+  if (!isNaN(args[0])) {
+    uid = args[0];
+    return addUserToGroup(uid);
+  }
 
-	// 🔗 If it's a Facebook link
-	if (args[0].includes("facebook.com")) {
-		const link = args[0];
-		try {
-			const res = await axios.get(`https://id.traodoisub.com/api.php?link=${encodeURIComponent(link)}`);
-			if (!res.data || !res.data.id) return send("❌ UID not found from the provided link.");
-			uid = parseInt(res.data.id);
-		} catch (err) {
-			console.error(err);
-			return send("❌ Error fetching UID from the link.");
-		}
-	} else if (!isNaN(args[0])) {
-		uid = parseInt(args[0]);
-	} else {
-		return send("⚠️ Invalid UID or link.");
-	}
+  // Otherwise, treat it as a link
+  const link = args[0];
 
-	if (participantIDs.includes(uid)) return send("✅ This user is already in the group.");
+  try {
+    const res = await axios.get(`https://facebookuid.freshbots.me/?url=${encodeURIComponent(link)}`);
+    if (!res.data || !res.data.uid) return out("❌ UID not found from the provided link.");
+    uid = res.data.uid;
+    addUserToGroup(uid);
+  } catch (e) {
+    console.error("Error fetching UID:", e);
+    return out("❌ Error fetching UID from the link.");
+  }
 
-	try {
-		await api.addUserToGroup(uid, threadID);
-		if (approvalMode && !admins.includes(botID)) {
-			return send("✅ User added to the *approval list*.");
-		} else {
-			return send("✅ User added to the *group*.");
-		}
-	} catch (err) {
-		console.error(err);
-		return send("❌ Failed to add user to the group. Maybe they have privacy settings or your bot isn't admin.");
-	}
+  async function addUserToGroup(uid) {
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const participantIDs = threadInfo.participantIDs.map(e => parseInt(e));
+      const adminIDs = threadInfo.adminIDs.map(e => parseInt(e.id));
+      const approvalMode = threadInfo.approvalMode;
+
+      if (participantIDs.includes(parseInt(uid))) {
+        return out("⚠️ This user is already in the group.");
+      }
+
+      await api.addUserToGroup(parseInt(uid), threadID);
+
+      if (approvalMode === true && !adminIDs.includes(botID)) {
+        return out("✅ User added to the approval list.");
+      } else {
+        return out("✅ User added to the group successfully!");
+      }
+    } catch (err) {
+      console.error(err);
+      return out("❌ Failed to add user. Maybe the user has privacy restrictions or your bot is not friends with them.");
+    }
+  }
 };
