@@ -1,12 +1,12 @@
 "use strict";
- 
+
 /** Modified by @YanMaglinte (YANDEVA)
  * Real credits to the unidentified owner
  * https://github.com/YANDEVA/BotPack
  */
- 
+
 var utils = require("../utils");
- 
+
 module.exports = function (defaultFuncs, api, ctx) {
 	return async function shareContact(text, senderID, threadID, callback) {
     let resolveFunc = function () { };
@@ -15,7 +15,7 @@ module.exports = function (defaultFuncs, api, ctx) {
         resolveFunc = resolve;
         rejectFunc = reject;
     });
- 
+
     const data = {
         av: ctx.i_userID || ctx.userID,
         fb_api_caller_class: "RelayModern",
@@ -36,7 +36,7 @@ module.exports = function (defaultFuncs, api, ctx) {
             scale: 3
         })
     };
- 
+
     defaultFuncs
         .post("https://www.facebook.com/api/graphql/", ctx.jar, data)
         .then(utils.parseAndCheckLogin(ctx, defaultFuncs))
@@ -46,7 +46,7 @@ module.exports = function (defaultFuncs, api, ctx) {
             }
         })
         .catch(function (err) {});
- 
+
 		if (!callback) {
 			callback = function (err, data) {
 				if (err) return rejectFunc(err);
@@ -77,7 +77,7 @@ module.exports = function (defaultFuncs, api, ctx) {
 			"type": 3
 		});
 		ctx.mqttClient.publish('/ls_req', form)
- 
+
 		return returnPromise;
 	};
 };
