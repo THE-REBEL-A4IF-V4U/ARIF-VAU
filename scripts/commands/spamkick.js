@@ -105,7 +105,7 @@ module.exports.run = async ({ api, event, args }) => {
       if (spamConfig[threadID]?.active) {
         return api.sendMessage(module.exports.languages.en.alreadyOn, threadID);
       }
-      spamConfig[threadID] = { active: true, messageLimit: 20, timeLimit: 60 };
+      spamConfig[threadID] = { active: true, messageLimit: 7, timeLimit: 60 };
       saveConfig();
       api.sendMessage(module.exports.languages.en.on, threadID);
       break;
