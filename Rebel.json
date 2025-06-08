@@ -6,7 +6,7 @@
   "developermode": false,
   "language": "en",
   "notification": false,
-  "approval": true,
+  "approval": false,
   "saveState": true,
   "banMsg": false,
   "adminOnlyMsg": false,
