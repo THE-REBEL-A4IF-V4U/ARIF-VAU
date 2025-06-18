@@ -1,13 +1,13 @@
-const fs = require("fs");
 const axios = require("axios");
 const path = require("path");
+const { Readable } = require("stream");
 
 module.exports.config = {
   name: "sd",
-  version: "1.1.0",
+  version: "1.2.0",
   permission: 0,
-  credits: "Nayan",
-  description: "Search and select media, then download audio or video.",
+  credits: "Nayan (Modified by THE REBEL)",
+  description: "Search and stream media without saving to cache.",
   prefix: true,
   category: "user",
   usages: "[reply media or provide URL]",
@@ -34,7 +34,7 @@ module.exports.run = async ({ api, event, args }) => {
       return api.sendMessage(`[⚜️]➜ No results found for this media.`, event.threadID, event.messageID);
     }
 
-    let msg = `Here are the results:\n\n`;
+    let msg = `🎶 Here are the results:\n\n`;
     data.forEach((item, index) => {
       msg += `${index + 1}. ${item.title}\nDuration: ${item.length}\n\n`;
     });
@@ -62,20 +62,17 @@ module.exports.handleReply = async ({ api, event, handleReply }) => {
   const reply = event.body.trim();
   api.unsendMessage(handleReply.messageID);
 
-
-  
   if (!step) {
     const choice = parseInt(reply);
     if (isNaN(choice) || choice < 1 || choice > results.length) {
       return api.sendMessage("[⚜️]➜ Invalid choice. Please reply with a valid number.", event.threadID, event.messageID);
     }
 
-
     const selected = results[choice - 1];
     const ytUrlEncoded = encodeURIComponent(selected.url);
 
     const message = await api.sendMessage(
-      `You selected:\n${selected.title}\n\nReply with:\n1 ➜ Download Audio\n2 ➜ Download Video`,
+      `✅ You selected:\n${selected.title}\n\nReply with:\n1 ➜ Download Audio\n2 ➜ Download Video`,
       event.threadID,
       event.messageID
     );
@@ -90,36 +87,32 @@ module.exports.handleReply = async ({ api, event, handleReply }) => {
     });
   }
 
-  
   if (step === 2) {
     if (reply !== '1' && reply !== '2') {
       return api.sendMessage("[⚜️]➜ Please reply with 1 for audio or 2 for video.", event.threadID, event.messageID);
     }
 
     const type = reply === '1' ? "audio" : "video";
+
     try {
-      const { data } = await axios.get(`https://nayan-video-downloader.vercel.app/ytdown?url=${ytUrl}`);
+      const { data } = await axios.get(`https://nayan-video-downloader.vercel.app/ytdown?url=${handleReply.ytUrl}`);
       if (!data?.status || !data?.data) {
         return api.sendMessage("[⚜️]➜ Failed to fetch download URL.", event.threadID, event.messageID);
       }
 
-      const downloadUrl = type === 'audio' ? data.data.video : data.data.video;
-      const fileName = `download_${Date.now()}.${type === 'audio' ? 'mp3' : 'mp4'}`;
-      const filePath = path.join(__dirname, 'cache', fileName);
+      const mediaUrl = type === 'audio' ? data.data.audio : data.data.video;
+      const ext = type === 'audio' ? 'mp3' : 'mp4';
 
-      const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
-      fs.writeFileSync(filePath, Buffer.from(response.data, 'binary'));
+      const response = await axios.get(mediaUrl, { responseType: 'stream' });
 
       api.sendMessage({
         body: `✅ Here is your ${type}:\n${handleReply.title}`,
-        attachment: fs.createReadStream(filePath)
-      }, event.threadID, () => {
-        fs.unlinkSync(filePath);
-      }, event.messageID);
+        attachment: response.data.pipe(Readable.from(response.data))
+      }, event.threadID, event.messageID);
 
     } catch (err) {
       console.error(err);
-      return api.sendMessage("[⚜️]➜ Error while downloading media.", event.threadID, event.messageID);
+      return api.sendMessage("[⚜️]➜ Error while streaming media.", event.threadID, event.messageID);
     }
   }
 };
